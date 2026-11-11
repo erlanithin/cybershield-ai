@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CyberShield AI - AI-Powered Cyberbullying Detection System{% endblock %}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CyberShield Theme CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <!-- SECTION 1 – NAVIGATION BAR -->
+    <nav class="navbar navbar-expand-lg navbar-cybershield">
+        <div class="container">
+            <a class="navbar-brand navbar-brand-logo" href="{% url 'home' %}">
+                <div class="brand-icon-wrapper">
+                    <i class="bi bi-shield-shaded fs-4"></i>
+                </div>
+                <span>CyberShield <span class="brand-accent-text">AI</span></span>
+            </a>
+
+            <button class="navbar-toggler border-0 text-white" type="button" data-bs-toggle="collapse" data-bs-target="#cybershieldNavbar" aria-controls="cybershieldNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <i class="bi bi-list fs-2 text-white"></i>
+            </button>
+
+            <div class="collapse navbar-collapse" id="cybershieldNavbar">
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'home' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="{% url 'home' %}#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if request.resolver_match.url_name == 'detection' %}active{% endif %}" href="{% url 'detection' %}">Detection</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if request.resolver_match.url_name == 'batch_detection' %}active{% endif %}" href="{% url 'batch_detection' %}">Batch Analysis</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if request.resolver_match.url_name == 'model_analytics' %}active{% endif %}" href="{% url 'model_analytics' %}">AI Model</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if 'reports' in request.path %}active{% endif %}" href="{% url 'reports' %}">Reports</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="{% url 'home' %}#about">About</a>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center gap-2">
+                    {% if user.is_authenticated %}
+                        <div class="dropdown">
+                            <button class="btn btn-outline-light-glow dropdown-toggle d-flex align-items-center gap-2 py-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-person-circle"></i>
+                                <span>{{ user.username }}</span>
+                                {% if user.is_staff or user.profile.is_moderator_or_admin %}
+                                    <span class="badge bg-danger ms-1" style="font-size: 0.65rem;">MOD</span>
+                                {% endif %}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2">
+                                <li><a class="dropdown-item py-2" href="{% url 'profile' %}"><i class="bi bi-person me-2"></i>My Profile</a></li>
+                                <li><a class="dropdown-item py-2" href="{% url 'user_dashboard' %}"><i class="bi bi-clock-history me-2"></i>My Detection History</a></li>
+                                <li><a class="dropdown-item py-2" href="{% url 'dashboard' %}"><i class="bi bi-speedometer2 me-2"></i>Moderation Dashboard</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger py-2" href="{% url 'logout' %}">
+                                        <i class="bi bi-box-arrow-right me-2"></i>Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-outline-light-glow">Login</a>
+                        <a href="{% url 'register' %}" class="btn btn-accent">Get Started</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Global Messages Alert Block -->
+    {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'info' %}info{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm d-flex align-items-center gap-2" role="alert">
+            <i class="bi {% if message.tags == 'error' %}bi-exclamation-triangle-fill{% elif message.tags == 'success' %}bi-check-circle-fill{% else %}bi-info-circle-fill{% endif %} fs-5"></i>
+            <div>{{ message }}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Page Content Block -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- SECTION 7 – FOOTER -->
+    <footer class="footer-cybershield" id="about">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div class="brand-icon-wrapper" style="width: 36px; height: 36px;">
+                            <i class="bi bi-shield-shaded fs-5"></i>
+                        </div>
+                        <span class="fs-4 fw-bold text-white">CyberShield <span class="brand-accent-text">AI</span></span>
+                    </div>
+                    <p class="small text-white-50 pe-lg-4">
+                        Advanced AI-powered cyberbullying detection and prevention platform engineered with Python, NLP, and Machine Learning to identify harmful, threatening, toxic, and abusive social media content.
+                    </p>
+                    <div class="d-flex gap-3 text-white-50 mt-3">
+                        <a href="#" class="text-white-50 hover-accent fs-5"><i class="bi bi-twitter-x"></i></a>
+                        <a href="#" class="text-white-50 hover-accent fs-5"><i class="bi bi-github"></i></a>
+                        <a href="#" class="text-white-50 hover-accent fs-5"><i class="bi bi-linkedin"></i></a>
+                        <a href="#" class="text-white-50 hover-accent fs-5"><i class="bi bi-discord"></i></a>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-3 col-6">
+                    <h6 class="footer-heading">Product</h6>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'detection' %}">Real-Time Detection</a></li>
+                        <li><a href="{% url 'batch_detection' %}">Batch Analysis</a></li>
+                        <li><a href="{% url 'dashboard' %}">Moderator Dashboard</a></li>
+                        <li><a href="{% url 'model_analytics' %}">Model Evaluation</a></li>
+                        <li><a href="{% url 'report_create' %}">Submit Incident</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-2 col-md-3 col-6">
+                    <h6 class="footer-heading">Features</h6>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'home' %}#features">Hate Speech ID</a></li>
+                        <li><a href="{% url 'home' %}#features">Threat Detection</a></li>
+                        <li><a href="{% url 'home' %}#features">Toxic Comment Scanner</a></li>
+                        <li><a href="{% url 'home' %}#how-it-works">NLP Pipeline</a></li>
+                        <li><a href="{% url 'model_analytics' %}">Confusion Matrix</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-2 col-md-3 col-6">
+                    <h6 class="footer-heading">Resources</h6>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'home' %}#how-it-works">How It Works</a></li>
+                        <li><a href="{% url 'api_analyze' %}">REST API Reference</a></li>
+                        <li><a href="{% url 'reports' %}">Public Reports</a></li>
+                        <li><a href="#privacy">Privacy Guidelines</a></li>
+                        <li><a href="#docs">Documentation</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-2 col-md-3 col-6">
+                    <h6 class="footer-heading">Security</h6>
+                    <div class="d-flex flex-column gap-2">
+                        <span class="badge bg-dark border border-secondary text-light p-2 text-start">
+                            <i class="bi bi-shield-check text-success me-1"></i> CSRF Protected
+                        </span>
+                        <span class="badge bg-dark border border-secondary text-light p-2 text-start">
+                            <i class="bi bi-lock-fill text-info me-1"></i> RBAC Enabled
+                        </span>
+                        <span class="badge bg-dark border border-secondary text-light p-2 text-start">
+                            <i class="bi bi-cpu-fill text-warning me-1"></i> Scikit-Learn NLP
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom d-flex flex-wrap justify-content-between align-items-center">
+                <p class="mb-0 text-white-50">
+                    &copy; 2026 CyberShield AI Inc. All rights reserved. Building safer digital communities with ethical AI.
+                </p>
+                <div class="d-flex gap-4">
+                    <a href="#" class="text-white-50">Privacy Policy</a>
+                    <a href="#" class="text-white-50">Terms of Service</a>
+                    <a href="#" class="text-white-50">API Usage</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom CyberShield JS -->
+    <script src="/static/js/main.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

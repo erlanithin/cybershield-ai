@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Cyberbullying Detection - CyberShield AI{% endblock %}
+
+{% block content %}
+<div class="py-5 bg-light border-bottom">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <span class="section-pill">Inference Engine</span>
+                <h1 class="fw-bold text-primary mb-2">Real-Time Cyberbullying Detection</h1>
+                <p class="text-muted mb-0">
+                    Analyze text messages, comments, and direct messages using trained multi-class Natural Language Processing models.
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <a href="{% url 'batch_detection' %}" class="btn btn-outline-custom">
+                    <i class="bi bi-stack me-1"></i> Switch to Batch Analysis
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row g-5">
+        <!-- Input Form Column -->
+        <div class="col-lg-7">
+            <div class="card card-white shadow-sm p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-primary mb-0">
+                        <i class="bi bi-pencil-square me-2"></i>Enter Message to Analyze
+                    </h5>
+                    <span class="small text-muted">
+                        <span id="char-count">0</span> characters | <span id="word-count">0</span> words
+                    </span>
+                </div>
+
+                <form method="POST" action="{% url 'detection' %}" id="detection-form">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        {{ form.message }}
+                        {% if form.message.errors %}
+                        <div class="text-danger small mt-1">{{ form.message.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-accent px-4 py-2" id="btn-submit-analyze">
+                                <i class="bi bi-cpu-fill me-1"></i> Analyze Message
+                            </button>
+                            <button type="button" class="btn btn-primary-dark px-3 py-2" id="btn-ajax-analyze">
+                                <i class="bi bi-lightning-charge-fill me-1"></i> Fast Live Check
+                            </button>
+                        </div>
+                        <button type="reset" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('live-result-container').classList.add('d-none');">
+                            <i class="bi bi-x-circle me-1"></i> Clear
+                        </button>
+                    </div>
+
+                    <div id="analysis-spinner" class="mt-3 text-primary d-none">
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                        <span class="small fw-semibold">Evaluating linguistic features and running inference...</span>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Sample Test Pills -->
+            <div class="card card-white shadow-sm p-4">
+                <h6 class="fw-bold text-primary mb-2">
+                    <i class="bi bi-flask me-2"></i>Quick Test Samples (Click to Load):
+                </h6>
+                <p class="small text-muted mb-3">Select any scenario below to automatically populate the analysis textarea:</p>
+                
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="#" class="badge bg-light text-dark border sample-text-pill text-start p-2 text-wrap" data-sample="Hey, this tutorial was very helpful and well-structured, thank you!">
+                        <i class="bi bi-check-circle-fill text-success me-1"></i> Safe / Constructive Feedback
+                    </a>
+                    <a href="#" class="badge bg-light text-dark border sample-text-pill text-start p-2 text-wrap" data-sample="Why are you even here? Nobody likes you or wants you around. Delete your account loser.">
+                        <i class="bi bi-exclamation-circle-fill text-warning me-1"></i> Targeted Harassment & Exclusion
+                    </a>
+                    <a href="#" class="badge bg-light text-dark border sample-text-pill text-start p-2 text-wrap" data-sample="I will find where you live and beat you bloody tonight. Sleep with one eye open.">
+                        <i class="bi bi-shield-slash-fill text-danger me-1"></i> Violent Physical Threat
+                    </a>
+                    <a href="#" class="badge bg-light text-dark border sample-text-pill text-start p-2 text-wrap" data-sample="You look like a disgusting, fat, hideous pig. Nobody could ever love you.">
+                        <i class="bi bi-person-x-fill text-warning me-1"></i> Personal Attack & Body Shaming
+                    </a>
+                    <a href="#" class="badge bg-light text-dark border sample-text-pill text-start p-2 text-wrap" data-sample="All immigrants of your race are filthy subhuman parasites and should be wiped out.">
+                        <i class="bi bi-megaphone-fill text-danger me-1"></i> Dehumanizing Hate Speech
+                    </a>
+                    <a href="#" class="badge bg-light text-dark border sample-text-pill text-start p-2 text-wrap" data-sample="Shut your fucking mouth you absolute piece of shit, go drown in acid.">
+                        <i class="bi bi-virus2 text-warning me-1"></i> Toxic & Abusive Language
+                    </a>
+                    <a href="#" class="badge bg-light text-dark border sample-text-pill text-start p-2 text-wrap" data-sample="Send your private naked pictures right now or I will leak your contacts online.">
+                        <i class="bi bi-camera-fill text-danger me-1"></i> Sexual Harassment & Coercion
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Column -->
+        <div class="col-lg-5">
+            <!-- Dynamic AJAX Result Placeholder -->
+            <div id="live-result-container" class="d-none"></div>
+
+            <!-- Server Rendered Result Card (If Form Submitted via POST) -->
+            {% if result and result.success %}
+            <div class="card card-white shadow-md p-4 mb-4 {% if result.risk_level == 'Safe' %}result-card-safe{% elif result.risk_level == 'High-Risk Content' %}result-card-danger{% else %}result-card-warning{% endif %}">
+                <!-- Result Header -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-3 gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                        {% if result.risk_level == 'Safe' %}
+                            <i class="bi bi-shield-check text-success fs-1"></i>
+                        {% elif result.risk_level == 'High-Risk Content' %}
+                            <i class="bi bi-exclamation-triangle-fill text-danger fs-1"></i>
+                        {% else %}
+                            <i class="bi bi-exclamation-circle-fill text-warning fs-1"></i>
+                        {% endif %}
+                        <div>
+                            <h4 class="mb-0 fw-bold">{{ result.predicted_category }}</h4>
+                            <div class="text-muted small">Confidence Score: <strong class="text-dark">{{ result.confidence_score }}%</strong></div>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge {{ result.badge_class }} fs-6">
+                            {{ result.risk_level }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Original Message -->
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold">Original Message</label>
+                    <div class="p-3 bg-light rounded-3 border fst-italic">
+                        "{{ result.original_text }}"
+                    </div>
+                </div>
+
+                <!-- Trigger Words -->
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold">Trigger Signals & High-Impact Terms</label>
+                    <div>
+                        {% if result.trigger_words %}
+                            {% for word in result.trigger_words %}
+                                <span class="trigger-word-pill">{{ word }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted small">No aggressive keyword triggers identified.</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- AI Rationale -->
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold">AI Rationale & Linguistic Analysis</label>
+                    <p class="mb-0 text-dark small">{{ result.explanation }}</p>
+                </div>
+
+                <!-- Recommended Steps -->
+                <div class="p-3 rounded-3 mb-3" style="background: rgba(11, 82, 104, 0.05); border: 1px solid rgba(11, 82, 104, 0.1);">
+                    <h6 class="fw-bold mb-2 text-primary">
+                        <i class="bi bi-shield-check me-2"></i>Recommended Next Steps
+                    </h6>
+                    <ul class="list-unstyled mb-0 small">
+                        {% for step in result.recommendations %}
+                            <li class="mb-1"><i class="bi bi-arrow-right-circle text-primary me-2"></i>{{ step }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Probabilities Breakdown -->
+                <div class="p-3 rounded-3 bg-white border mb-3">
+                    <h6 class="fw-bold mb-2 text-primary small">
+                        <i class="bi bi-bar-chart-fill me-2"></i>Classification Probabilities
+                    </h6>
+                    {% for cat, pct in result.probabilities.items %}
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>{{ cat }}</span>
+                            <span class="fw-bold">{{ pct }}%</span>
+                        </div>
+                        <div class="progress" style="height: 5px;">
+                            <div class="progress-bar {% if pct > 35 %}bg-danger{% else %}bg-primary{% endif %}" style="width: {{ pct }}%;"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Escalate Button if Harmful -->
+                {% if result.risk_level != 'Safe' %}
+                <div class="d-grid mb-3">
+                    <a href="{% url 'report_create' %}?message={{ result.original_text|urlencode }}" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-shield-fill-exclamation me-1"></i> File Official Incident Report
+                    </a>
+                </div>
+                {% endif %}
+
+                <!-- Feedback Section -->
+                <div class="card bg-light border-0 p-3 rounded-3" id="feedback-card-body">
+                    <h6 class="fw-bold mb-2 small text-muted">Was this prediction accurate?</h6>
+                    <form method="POST" action="{% url 'submit_feedback' %}" id="ajax-feedback-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="analysis_id" value="{{ result.id }}">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-8">
+                                <select name="feedback_type" class="form-select form-select-sm" required>
+                                    <option value="accurate">Prediction is Accurate</option>
+                                    <option value="false_positive">False Alarm (Actually Safe)</option>
+                                    <option value="false_negative">Missed Harm (Actually Bullying)</option>
+                                    <option value="incorrect_category">Incorrect Category</option>
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <button type="submit" class="btn btn-sm btn-secondary w-100">Submit</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="mt-3 pt-2 border-top text-muted small text-end">
+                    <i class="bi bi-info-circle me-1"></i> {{ result.disclaimer }}
+                </div>
+            </div>
+            {% elif not result %}
+            <div class="card card-white shadow-sm p-4 text-center">
+                <div class="py-5">
+                    <div class="dash-icon-box mx-auto mb-3" style="background: rgba(115, 227, 232, 0.2); color: var(--secondary); width: 64px; height: 64px;">
+                        <i class="bi bi-shield-shaded fs-2"></i>
+                    </div>
+                    <h5 class="fw-bold text-primary">Awaiting Message Input</h5>
+                    <p class="text-muted small max-w-350 mx-auto">
+                        Type a message in the input area or click one of the quick test samples to inspect predictions.
+                    </p>
+                    <div class="badge bg-light text-muted border px-3 py-2 small">
+                        Supports 7 Abusive & Bullying Categories
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

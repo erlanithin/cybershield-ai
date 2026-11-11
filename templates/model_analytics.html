@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Model Performance & Evaluation Metrics - CyberShield AI{% endblock %}
+
+{% block content %}
+<div class="py-5 bg-light border-bottom">
+    <div class="container">
+        <span class="section-pill">Empirical Verification</span>
+        <h1 class="fw-bold text-primary mb-2">Machine Learning Model Performance & Metrics</h1>
+        <p class="text-muted mb-0">
+            True empirical evaluation metrics computed during pipeline training across {{ metrics.test_samples }} held-out test samples.
+        </p>
+    </div>
+</div>
+
+<div class="container py-5">
+    <!-- Top KPI Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="dashboard-stat-card">
+                <div class="dash-icon-box bg-primary text-white">
+                    <i class="bi bi-award-fill"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-primary mb-0">
+                        {{ metrics.accuracy|floatformat:4 }}
+                    </h3>
+                    <div class="small text-muted">Overall Test Accuracy</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+            <div class="dashboard-stat-card">
+                <div class="dash-icon-box" style="background: rgba(32, 166, 122, 0.15); color: var(--success);">
+                    <i class="bi bi-bullseye"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-success mb-0">
+                        {{ metrics.f1_weighted|floatformat:4 }}
+                    </h3>
+                    <div class="small text-muted">Weighted F1-Score</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+            <div class="dashboard-stat-card">
+                <div class="dash-icon-box" style="background: rgba(115, 227, 232, 0.25); color: var(--secondary);">
+                    <i class="bi bi-crosshair"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-secondary mb-0">
+                        {{ metrics.precision_weighted|floatformat:4 }}
+                    </h3>
+                    <div class="small text-muted">Weighted Precision</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+            <div class="dashboard-stat-card">
+                <div class="dash-icon-box" style="background: rgba(243, 156, 18, 0.15); color: var(--warning);">
+                    <i class="bi bi-arrow-repeat"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-warning mb-0">
+                        {{ metrics.recall_weighted|floatformat:4 }}
+                    </h3>
+                    <div class="small text-muted">Weighted Recall</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Model Details -->
+    <div class="alert alert-info border-0 shadow-sm d-flex align-items-center gap-3 mb-4">
+        <i class="bi bi-cpu fs-3"></i>
+        <div>
+            <strong>Active Primary Model:</strong> {{ metrics.best_model }} &bull;
+            <strong>Total Dataset:</strong> {{ metrics.total_dataset_size }} labeled records &bull;
+            <strong>Train Split:</strong> {{ metrics.train_samples }} samples &bull;
+            <strong>Test Split:</strong> {{ metrics.test_samples }} samples &bull;
+            <strong>Features:</strong> TF-IDF unigrams & bigrams (5,000 max features, sublinear TF)
+        </div>
+    </div>
+
+    <!-- Model Comparison Table -->
+    <div class="card card-white shadow-sm p-4 mb-5">
+        <h5 class="fw-bold text-primary mb-3">
+            <i class="bi bi-bar-chart-line-fill me-2"></i>Algorithm Benchmark & Performance Comparison
+        </h5>
+        <div class="table-responsive">
+            <table class="table custom-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Algorithm Name</th>
+                        <th>Accuracy</th>
+                        <th>Macro F1</th>
+                        <th>Weighted F1</th>
+                        <th>Weighted Precision</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for name, scores in metrics.model_comparison.items %}
+                    <tr {% if name == metrics.best_model %}class="table-light fw-bold"{% endif %}>
+                        <td>
+                            {% if name == metrics.best_model %}
+                                <i class="bi bi-star-fill text-warning me-1"></i>
+                            {% endif %}
+                            {{ name }}
+                        </td>
+                        <td>{{ scores.accuracy|floatformat:4 }}</td>
+                        <td>{{ scores.f1_macro|default:"-" }}</td>
+                        <td>{{ scores.f1_weighted|floatformat:4 }}</td>
+                        <td>{{ scores.precision_weighted|default:"-" }}</td>
+                        <td>
+                            {% if name == metrics.best_model %}
+                                <span class="badge bg-success">Production Selected</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark border">Evaluated</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Per-Class Metrics Table -->
+    <div class="card card-white shadow-sm p-4 mb-5">
+        <h5 class="fw-bold text-primary mb-3">
+            <i class="bi bi-grid-3x3-gap-fill me-2"></i>Per-Category Classification Breakdown
+        </h5>
+        <div class="table-responsive">
+            <table class="table custom-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Category Label</th>
+                        <th>Precision</th>
+                        <th>Recall</th>
+                        <th>F1-Score</th>
+                        <th>Test Support</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for label, item in metrics.per_class_metrics.items %}
+                    <tr>
+                        <td class="fw-semibold">{{ label }}</td>
+                        <td>{{ item.precision|floatformat:4 }}</td>
+                        <td>{{ item.recall|floatformat:4 }}</td>
+                        <td>
+                            <span class="fw-bold text-primary">{{ item.f1_score|floatformat:4 }}</span>
+                        </td>
+                        <td>{{ item.support }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-3">Metrics compiling...</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Confusion Matrix Heatmap Table -->
+    {% if metrics.confusion_matrix %}
+    <div class="card card-white shadow-sm p-4">
+        <h5 class="fw-bold text-primary mb-2">
+            <i class="bi bi-table me-2"></i>Multi-Class Confusion Matrix (Predicted vs Actual)
+        </h5>
+        <p class="small text-muted mb-4">
+            Rows represent the true ground-truth category, while columns represent the model's predicted classification.
+        </p>
+
+        <div class="table-responsive">
+            <table class="table table-bordered text-center align-middle mb-0" style="font-size: 0.85rem;">
+                <thead class="bg-primary text-white">
+                    <tr>
+                        <th class="bg-dark text-white" style="width: 140px;">True \ Pred</th>
+                        {% for lbl in metrics.labels %}
+                            <th class="small p-2">{{ lbl }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in metrics.confusion_matrix %}
+                        {% with row_index=forloop.counter0 %}
+                        <tr>
+                            <td class="fw-bold bg-light text-start">{{ metrics.labels|slice:row_index|last }}</td>
+                            {% for cell in row %}
+                            <td class="{% if cell > 0 %}{% if forloop.counter0 == row_index %}bg-success bg-opacity-25 fw-bold text-success{% else %}bg-danger bg-opacity-10 text-danger{% endif %}{% else %}text-muted{% endif %}">
+                                {{ cell }}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endwith %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

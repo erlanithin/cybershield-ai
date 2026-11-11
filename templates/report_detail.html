@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Report #{{ report.id }} - CyberShield AI{% endblock %}
+
+{% block content %}
+<div class="py-4 bg-light border-bottom">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <a href="{% url 'reports' %}" class="text-secondary small fw-bold">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Reports
+                </a>
+                <h2 class="fw-bold text-primary mb-0 mt-1">Incident Report #{{ report.id }}</h2>
+            </div>
+            <div>
+                <span class="badge {{ report.status_badge_class }} fs-6 p-2">
+                    {{ report.get_status_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row g-4">
+        <!-- Main Report Body -->
+        <div class="col-lg-8">
+            <div class="card card-white shadow-sm p-4 mb-4">
+                <h4 class="fw-bold text-primary mb-3">{{ report.title }}</h4>
+
+                <div class="row g-3 mb-4 p-3 bg-light rounded-3">
+                    <div class="col-sm-4">
+                        <span class="text-muted small d-block">Platform</span>
+                        <strong class="text-primary"><i class="bi bi-globe me-1"></i>{{ report.platform }}</strong>
+                    </div>
+                    <div class="col-sm-4">
+                        <span class="text-muted small d-block">Category</span>
+                        <strong class="text-primary">{{ report.category }}</strong>
+                    </div>
+                    <div class="col-sm-4">
+                        <span class="text-muted small d-block">Reported On</span>
+                        <strong>{{ report.created_at|date:"M d, Y H:i" }}</strong>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="text-muted text-uppercase small fw-bold">Offensive Message Observed:</h6>
+                    <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-3 text-danger fw-semibold">
+                        "{{ report.offensive_message }}"
+                    </div>
+                </div>
+
+                {% if report.incident_url %}
+                <div class="mb-4">
+                    <h6 class="text-muted text-uppercase small fw-bold">Source URL:</h6>
+                    <a href="{{ report.incident_url }}" target="_blank" rel="noopener noreferrer" class="text-break">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>{{ report.incident_url }}
+                    </a>
+                </div>
+                {% endif %}
+
+                <div class="mb-4">
+                    <h6 class="text-muted text-uppercase small fw-bold">Detailed Incident Context:</h6>
+                    <p class="text-dark">{{ report.description|linebreaks }}</p>
+                </div>
+
+                {% if report.evidence_file %}
+                <div class="mb-4 p-3 border rounded-3 bg-light">
+                    <h6 class="text-muted text-uppercase small fw-bold mb-2">Attached Documentation & Evidence:</h6>
+                    <a href="{{ report.evidence_file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-paperclip me-1"></i> View / Download Evidence File
+                    </a>
+                </div>
+                {% endif %}
+
+                {% if report.admin_notes %}
+                <div class="p-3 border rounded-3 bg-light">
+                    <h6 class="fw-bold text-primary mb-1">
+                        <i class="bi bi-shield-shaded me-1"></i> Moderator Action Notes:
+                    </h6>
+                    <p class="small text-muted mb-0">{{ report.admin_notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar / Admin Update -->
+        <div class="col-lg-4">
+            {% if is_staff and update_form %}
+            <div class="card card-white shadow-sm p-4 mb-4">
+                <h5 class="fw-bold text-primary mb-3">
+                    <i class="bi bi-gear-fill me-2"></i>Moderator Controls
+                </h5>
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-primary">Update Status:</label>
+                        {{ update_form.status }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-primary">Moderation Notes:</label>
+                        {{ update_form.admin_notes }}
+                    </div>
+                    <button type="submit" class="btn btn-accent w-100">
+                        <i class="bi bi-check2-circle me-1"></i> Save Status Update
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Safety Guidelines Box -->
+            <div class="card card-glass p-4">
+                <h6 class="fw-bold text-primary mb-2">
+                    <i class="bi bi-life-preserver me-2"></i>Immediate Safety Measures
+                </h6>
+                <ul class="list-unstyled small text-muted mb-0">
+                    <li class="mb-2"><i class="bi bi-check2 text-success me-1"></i> Block the abusive user immediately on the native platform.</li>
+                    <li class="mb-2"><i class="bi bi-check2 text-success me-1"></i> Never share personal identifying info (doxxing protection).</li>
+                    <li class="mb-2"><i class="bi bi-check2 text-success me-1"></i> Keep timestamps of every message in a secure archive.</li>
+                    <li><i class="bi bi-check2 text-success me-1"></i> Contact emergency authorities if threats of physical violence are present.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

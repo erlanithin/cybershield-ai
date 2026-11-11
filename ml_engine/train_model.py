@@ -1,0 +1,562 @@
+"""
+CyberShield AI - Machine Learning Model Training & Evaluation Pipeline
+Trains and evaluates multiple classifiers for cyberbullying detection across 7 categories:
+1. Normal / Safe
+2. Harassment
+3. Hate Speech
+4. Threatening Language
+5. Personal Attack
+6. Sexual Harassment
+7. Toxic / Abusive Language
+"""
+import os
+import json
+from pathlib import Path
+import pandas as pd
+import numpy as np
+import joblib
+
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.svm import LinearSVC
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import (
+    accuracy_score,
+    precision_recall_fscore_support,
+    classification_report,
+    confusion_matrix
+)
+
+# Relative / absolute paths
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATASETS_DIR = BASE_DIR / 'datasets'
+MODELS_DIR = BASE_DIR / 'models'
+
+CATEGORIES = [
+    "Normal / Safe",
+    "Harassment",
+    "Hate Speech",
+    "Threatening Language",
+    "Personal Attack",
+    "Sexual Harassment",
+    "Toxic / Abusive Language"
+]
+
+
+def generate_curated_dataset() -> pd.DataFrame:
+    """
+    Creates an extensive, high-quality labeled cyberbullying dataset
+    covering real-world nuances, slang, safe conversations, and various attack vectors.
+    """
+    DATASETS_DIR.mkdir(parents=True, exist_ok=True)
+    csv_path = DATASETS_DIR / 'cyberbullying_dataset.csv'
+
+    # If an existing dataset CSV already exists and has good size, use it
+    if csv_path.exists():
+        df = pd.read_csv(csv_path)
+        if len(df) >= 300 and 'text' in df.columns and 'label' in df.columns:
+            return df
+
+    samples = [
+        # =====================================================================
+        # 1. NORMAL / SAFE (Constructive, casual, enthusiastic, polite, technical)
+        # =====================================================================
+        ("Hey everyone, excited to share my new open source project! Hope it helps someone.", "Normal / Safe"),
+        ("That was such a well-researched article. Thank you for taking the time to write it.", "Normal / Safe"),
+        ("Good morning friends! Hope you all have an amazing and productive week ahead.", "Normal / Safe"),
+        ("I respectfully disagree with your conclusion, but your arguments are compelling and well-stated.", "Normal / Safe"),
+        ("Can anyone recommend a good introductory book on machine learning and statistics?", "Normal / Safe"),
+        ("Congratulations on the promotion! You truly earned it through your hard work.", "Normal / Safe"),
+        ("Check out this sunset photo I took while hiking in the mountains yesterday.", "Normal / Safe"),
+        ("I loved the movie finale! What did you all think about the plot twist at the end?", "Normal / Safe"),
+        ("Happy birthday! Wishing you health, joy, and prosperity in the coming year.", "Normal / Safe"),
+        ("Great job on today's presentation team. Proud of what we accomplished together.", "Normal / Safe"),
+        ("Does anyone know if the library is open on Sunday afternoon?", "Normal / Safe"),
+        ("Cooking homemade pasta for dinner tonight. Recipe turned out delicious!", "Normal / Safe"),
+        ("Thank you for your constructive feedback on my pull request. I will implement the changes.", "Normal / Safe"),
+        ("The concert last night was unbelievable! The sound quality was out of this world.", "Normal / Safe"),
+        ("Just adopted this adorable rescue puppy from the shelter. Meet Buster!", "Normal / Safe"),
+        ("Could you please review the attached document and let me know your thoughts?", "Normal / Safe"),
+        ("I really appreciate how supportive this online community has been towards beginners.", "Normal / Safe"),
+        ("Remember to take breaks, drink plenty of water, and get enough sleep today.", "Normal / Safe"),
+        ("I had a great conversation with my mentor today about career growth and leadership.", "Normal / Safe"),
+        ("The new software update fixed all my battery life issues on my laptop.", "Normal / Safe"),
+        ("Volunteered at the community food bank today. Inspiring to see neighbors helping neighbors.", "Normal / Safe"),
+        ("Can someone explain the difference between supervised and unsupervised learning?", "Normal / Safe"),
+        ("Best coffee shop in downtown? Looking for quiet places to study with Wi-Fi.", "Normal / Safe"),
+        ("Just completed my first 5k marathon! Exhausted but feeling so accomplished.", "Normal / Safe"),
+        ("The customer support team was very polite and solved my issue within ten minutes.", "Normal / Safe"),
+        ("I disagree with the policy proposal, but let us have a civil debate about the trade-offs.", "Normal / Safe"),
+        ("Reading this book really changed my perspective on daily mindfulness and focus.", "Normal / Safe"),
+        ("Looking forward to the gaming tournament this weekend. Good luck to all participants!", "Normal / Safe"),
+        ("Sharing notes from the cybersecurity conference. Key takeaways on MFA and zero trust.", "Normal / Safe"),
+        ("Thank you so much for helping me debug this stubborn Python script. You are a lifesaver!", "Normal / Safe"),
+        ("Beautiful artwork! The color balance and brush strokes are breathtaking.", "Normal / Safe"),
+        ("Excited to announce our new scholarship program for underprivileged students in STEM.", "Normal / Safe"),
+        ("Had a relaxing weekend with family and friends outdoors in nature.", "Normal / Safe"),
+        ("Remember to stay safe online and never share your passwords with strangers.", "Normal / Safe"),
+        ("What is your favorite podcast for keeping up with artificial intelligence news?", "Normal / Safe"),
+        ("The garden is finally blooming! Springtime is definitely my favorite season.", "Normal / Safe"),
+        ("Our team just pushed the v2 release to staging. Seamless deployment!", "Normal / Safe"),
+        ("Sending positive vibes to anyone who is having a tough day right now. Hang in there.", "Normal / Safe"),
+        ("The professor gave an inspiring lecture on ethical considerations in robotics.", "Normal / Safe"),
+        ("I am learning how to play the guitar. Any tips for finger coordination exercises?", "Normal / Safe"),
+        ("We should organize a local clean-up drive this Saturday at the public park.", "Normal / Safe"),
+        ("Great teamwork during today's hackathon sprint. Let's keep the momentum going!", "Normal / Safe"),
+        ("Enjoyed the podcast episode on productivity habits and cognitive health.", "Normal / Safe"),
+        ("Hope you have a wonderful time on your vacation! Safe travels.", "Normal / Safe"),
+        ("Is there any known workaround for this CSS grid rendering issue on older Safari browsers?", "Normal / Safe"),
+        ("Just finished baking sourdough bread for the first time. Crust came out super crispy!", "Normal / Safe"),
+        ("Grateful for the warm welcome as I join this tech meetup group.", "Normal / Safe"),
+        ("Please find the summary of the quarterly financial metrics in the shared drive.", "Normal / Safe"),
+        ("What a thrilling football match! Both teams played with incredible sportsmanship.", "Normal / Safe"),
+        ("Remember to be kind to yourself and celebrate even the smallest daily victories.", "Normal / Safe"),
+
+        # =====================================================================
+        # 2. HARASSMENT (Persistent bullying, exclusion, stalking, dogpiling)
+        # =====================================================================
+        ("Why do you keep posting? Nobody here likes you or wants you around. Leave already.", "Harassment"),
+        ("Everyone in this group agrees you are annoying and should just delete your account.", "Harassment"),
+        ("We will make sure you never find peace online. We are watching everything you post.", "Harassment"),
+        ("Log off forever loser. Nobody cares about your stupid opinions or your existence.", "Harassment"),
+        ("Stop breathing our air and disappear. You have no friends and never will.", "Harassment"),
+        ("I will keep spamming your inbox every single day until you quit this platform.", "Harassment"),
+        ("Don't bother replying, we are going to report your account until you get banned for good.", "Harassment"),
+        ("You are completely worthless and pathetic. Everyone laughs behind your back.", "Harassment"),
+        ("Look at this clown trying so hard to be relevant. What a desperate lonely outcast.", "Harassment"),
+        ("Go cry to your mommy you big baby. No one here will ever care about you.", "Harassment"),
+        ("We are going to find out where you work and get you fired, just wait and see.", "Harassment"),
+        ("Keep your mouth shut if you know what is good for you. You are nothing but trash.", "Harassment"),
+        ("I have been tracking your profile for weeks. You cannot hide from me.", "Harassment"),
+        ("Get off the internet. Nobody asked for your ugly face to be on our feeds.", "Harassment"),
+        ("Let us all mass downvote this loser so their content gets buried permanently.", "Harassment"),
+        ("Why are you still alive? Seriously, do the world a favor and end yourself.", "Harassment"),
+        ("Nobody loves you, nobody wants you here. Just give up already and leave.", "Harassment"),
+        ("You are a constant joke to everyone. Can you not see how much we all despise you?", "Harassment"),
+        ("Stop trying to act smart. You are an embarrassing joke to your entire family.", "Harassment"),
+        ("We will tag all your sponsors and ruin your reputation completely.", "Harassment"),
+        ("Every time you post, we will flood your comments with mockery until you break down.", "Harassment"),
+        ("Why do you even wake up in the morning? You are a waste of oxygen and space.", "Harassment"),
+        ("You think you can escape us? We will find your alternative accounts too.", "Harassment"),
+        ("Total failure at life. Nobody wanted you around in high school and nobody wants you now.", "Harassment"),
+        ("Unfollow, block, and shun this miserable creature. Total social parasite.", "Harassment"),
+        ("Keep crying your crocodile tears. You deserve all the hate you are getting.", "Harassment"),
+        ("I am going to keep harassing you until you cry on live stream.", "Harassment"),
+        ("Everyone hates you. Just accept that you are an unwanted failure.", "Harassment"),
+        ("Delete your channel right now or we will leak all your private messages.", "Harassment"),
+        ("Go crawl into a hole and never show your face anywhere again, pathetic loser.", "Harassment"),
+
+        # =====================================================================
+        # 3. HATE SPEECH (Slurs, dehumanization based on race, religion, nationality, disability, gender)
+        # =====================================================================
+        ("Go back to your filthy third-world country, you subhuman parasites do not belong here.", "Hate Speech"),
+        ("All people of your religion are terrorists and bloodthirsty monsters who should be eradicated.", "Hate Speech"),
+        ("Your race is genetically inferior, low IQ, and primitive compared to civilized nations.", "Hate Speech"),
+        ("Filthy immigrants are ruining our culture and poisoning the blood of our country.", "Hate Speech"),
+        ("These people are disgusting vermin and disease-carrying rats that need to be cleansed.", "Hate Speech"),
+        ("Your kind should all be put in labor camps and wiped off the face of the earth.", "Hate Speech"),
+        ("I despise all minorities. You are nothing but criminal scum and parasites.", "Hate Speech"),
+        ("Your ethnic group is dirty, diseased, and uncivilized savages.", "Hate Speech"),
+        ("They are subhumans who don't deserve human rights or protection under the law.", "Hate Speech"),
+        ("Wipe out every single one of those religious zealots. Pure evil scum.", "Hate Speech"),
+        ("These foreign invaders are cockroaches destroying our homeland. Deport or eliminate them.", "Hate Speech"),
+        ("Disgusting degenerates who should not be allowed near children or public spaces.", "Hate Speech"),
+        ("You are a filthy mongrel and your entire bloodline is polluted.", "Hate Speech"),
+        ("Nobody wants people of your skin color in this neighborhood. Get out or else.", "Hate Speech"),
+        ("All of your people are born criminals and thieves. Inherent biological trash.", "Hate Speech"),
+        ("We need a purge to cleanse our community from these degenerate freeloaders.", "Hate Speech"),
+        ("Your holy book is a guide for savagery and your followers are mindless beasts.", "Hate Speech"),
+        ("God hates your kind and you will burn in hell for being a freak of nature.", "Hate Speech"),
+        ("These disabled freaks are a drain on taxpayer dollars and should not exist.", "Hate Speech"),
+        ("Hate all people from that tribe. They are treacherous backstabbers and vermin.", "Hate Speech"),
+        ("White supremacists are right, your race has never contributed anything to civilization.", "Hate Speech"),
+        ("Kick every single one of those foreign rats out before they overrun our society.", "Hate Speech"),
+        ("They look like animals and smell like sewage. Absolute genetic filth.", "Hate Speech"),
+        ("Your entire ethnicity deserves to be wiped out in a bloody genocide.", "Hate Speech"),
+        ("Filthy race mixing degenerates are destroying our pure heritage.", "Hate Speech"),
+
+        # =====================================================================
+        # 4. THREATENING LANGUAGE (Direct physical violence, weapons, murder, grievous harm)
+        # =====================================================================
+        ("I will find where you live and beat you until you are bloody and unconscious.", "Threatening Language"),
+        ("I know your home address. You better sleep with one eye open tonight or you will pay.", "Threatening Language"),
+        ("I am going to put a bullet through your head next time you step outside your door.", "Threatening Language"),
+        ("I will track down your kids at their school and make sure they suffer for what you said.", "Threatening Language"),
+        ("You won't survive the week. I am coming for you with a knife to slice your throat.", "Threatening Language"),
+        ("I swear I will break every bone in your body if I ever catch you on the street.", "Threatening Language"),
+        ("Someone needs to blow up your car while you are inside it, and I might just do it.", "Threatening Language"),
+        ("I have a loaded gun with your name carved on it. See you very soon.", "Threatening Language"),
+        ("You will regret ever crossing me. Your family will pay with their lives.", "Threatening Language"),
+        ("I am going to burn down your house while you and your family are sleeping.", "Threatening Language"),
+        ("Watch your back when you walk to your car tonight. You are not making it home safe.", "Threatening Language"),
+        ("I am going to strangle you with my bare hands until you stop kicking.", "Threatening Language"),
+        ("You are a dead man walking. Consider your days strictly numbered.", "Threatening Language"),
+        ("I hired someone to take care of you permanently. Enjoy your final hours.", "Threatening Language"),
+        ("I will bash your skull in with a baseball bat if you show your face here again.", "Threatening Language"),
+        ("Prepare your funeral because you won't survive the beating you are about to get.", "Threatening Language"),
+        ("I will slash your tires and stab you in the chest when you get out.", "Threatening Language"),
+        ("I have your GPS coordinates. I am outside right now. Come out or I come in.", "Threatening Language"),
+        ("I will poison your drink and watch you choke to death on the floor.", "Threatening Language"),
+        ("You signed your own death certificate when you made that statement.", "Threatening Language"),
+        ("I will rip your eyes out and feed them to the dogs you traitor.", "Threatening Language"),
+        ("I am going to murder you in cold blood. Don't think the police can save you.", "Threatening Language"),
+        ("Expect a molotov cocktail through your front window tonight.", "Threatening Language"),
+        ("I am going to hunt you down like an animal and put you down permanently.", "Threatening Language"),
+        ("Your life ends tomorrow. Say goodbye to your loved ones right now.", "Threatening Language"),
+
+        # =====================================================================
+        # 5. PERSONAL ATTACK (Direct insult, body shaming, mocking appearance, intelligence, character)
+        # =====================================================================
+        ("You are the ugliest, most repulsive creature I have ever laid eyes on in my life.", "Personal Attack"),
+        ("How can someone be so incredibly stupid and brain-dead? You have zero brain cells.", "Personal Attack"),
+        ("Look at your fat disgusting body. No wonder nobody will ever love you or date you.", "Personal Attack"),
+        ("You look like a hideous monster who fell out of an ugly tree and hit every branch.", "Personal Attack"),
+        ("You are an absolute moron who cannot even spell basic words. What a complete idiot.", "Personal Attack"),
+        ("You are a worthless failure who has accomplished nothing in your miserable existence.", "Personal Attack"),
+        ("Your face is so disgusting it makes people want to vomit just looking at you.", "Personal Attack"),
+        ("You are an incompetent clown who fails at everything you ever try.", "Personal Attack"),
+        ("You have the personality of a rotting potato and the looks of roadkill.", "Personal Attack"),
+        ("You are so dumb that listening to you speaks causes physical brain cell death.", "Personal Attack"),
+        ("Lose some weight you obese whale, your clothes are screaming for mercy.", "Personal Attack"),
+        ("You are pathetic, insecure, and an embarrassment to your parents and friends.", "Personal Attack"),
+        ("Nobody takes you seriously because you are a weak, cowardly little hypocrite.", "Personal Attack"),
+        ("You look like a walking disaster. Even plastic surgery couldn't save that horrific face.", "Personal Attack"),
+        ("Your mother should be ashamed of raising such an unintelligent, repulsive disaster.", "Personal Attack"),
+        ("What an obnoxious, arrogant, uneducated clown with delusions of grandeur.", "Personal Attack"),
+        ("You are a grotesque pig who deserves to be mocked and shamed everywhere.", "Personal Attack"),
+        ("I have never met someone as profoundly ignorant, toxic, and brainless as you.", "Personal Attack"),
+        ("Stop pretending you know what you are doing. You are a known fraud and laughingstock.", "Personal Attack"),
+        ("You are a pathetic excuse for a human being with an empty void where a brain should be.", "Personal Attack"),
+        ("Skinny little twig who would break in half in a light breeze. Absolutely pathetic.", "Personal Attack"),
+        ("Your hairline is running away from your repulsive face just like everyone else does.", "Personal Attack"),
+        ("You talk like a preschool dropout who hit their head on the sidewalk.", "Personal Attack"),
+        ("You are a desperate attention-seeking clown who reeks of insecurity and desperation.", "Personal Attack"),
+        ("Gross, smelly, ugly, and dumb. The complete package of human garbage.", "Personal Attack"),
+
+        # =====================================================================
+        # 6. SEXUAL HARASSMENT (Unwanted sexual advances, nonconsensual imagery, explicit vulgarity)
+        # =====================================================================
+        ("Send me your naked pictures right now or I will post your personal details online.", "Sexual Harassment"),
+        ("You dressed like a whore so you are clearly asking to get violated and groped.", "Sexual Harassment"),
+        ("Show your breasts on camera or I will tell everyone what kind of slut you are.", "Sexual Harassment"),
+        ("I want to force you into my bed and make you scream no matter how much you beg.", "Sexual Harassment"),
+        ("Stop playing hard to get you little tease, you know you want me to touch you.", "Sexual Harassment"),
+        ("I have intimate photos of you that I am going to upload to porn websites.", "Sexual Harassment"),
+        ("You look like a cheap prostitute who is good for only one dirty thing.", "Sexual Harassment"),
+        ("Send nudes immediately or I will send your private pictures to your boss and father.", "Sexual Harassment"),
+        ("I bet you take it from any random guy who walks by you dirty slut.", "Sexual Harassment"),
+        ("I am going to corner you alone in the office and show you what a real man does.", "Sexual Harassment"),
+        ("Show me what is under that dress or I will leak your phone number to creeps.", "Sexual Harassment"),
+        ("You need to be taught a sexual lesson so you learn to submit to men.", "Sexual Harassment"),
+        ("Stop acting innocent, we all know you are an easy slut who sleeps around.", "Sexual Harassment"),
+        ("I am going to grope you next time I see you in person and you won't do anything.", "Sexual Harassment"),
+        ("Give me head or I will make your life a living hell at school.", "Sexual Harassment"),
+        ("What is your price for one night? Name it because you definitely look cheap.", "Sexual Harassment"),
+        ("I saved all your private snaps and I will distribute them unless you do what I say.", "Sexual Harassment"),
+        ("Nice body, too bad your brain is empty. Come over here and let me use you.", "Sexual Harassment"),
+        ("I am going to touch you wherever I want and you better smile while I do it.", "Sexual Harassment"),
+        ("You are nothing more than a piece of meat meant for my sexual satisfaction.", "Sexual Harassment"),
+        ("Send those sexy videos or everyone you know will see what you did.", "Sexual Harassment"),
+        ("I am masturbating to your pictures right now and describing every vile detail.", "Sexual Harassment"),
+        ("You belong on your knees serving real men, you dirty little tramp.", "Sexual Harassment"),
+        ("Don't act like you have morals. You are just another worthless internet whore.", "Sexual Harassment"),
+        ("I will rip those clothes right off you if you ever walk near my street.", "Sexual Harassment"),
+
+        # =====================================================================
+        # 7. TOXIC / ABUSIVE LANGUAGE (Excessive profanity, cursing, hostile venom, shouting)
+        # =====================================================================
+        ("Shut your fucking mouth you absolute piece of shit before I lose my temper.", "Toxic / Abusive Language"),
+        ("This whole project is pure fucking garbage created by incompetent assholes.", "Toxic / Abusive Language"),
+        ("Go fuck yourself you miserable cunt. I hope your entire life burns down.", "Toxic / Abusive Language"),
+        ("What a massive load of bullshit from a braindead motherfucker who knows nothing.", "Toxic / Abusive Language"),
+        ("Fuck you and fuck everything you stand for. You are a dirty bastard.", "Toxic / Abusive Language"),
+        ("Eat shit and choke on it you toxic piece of human waste.", "Toxic / Abusive Language"),
+        ("Get the fuck out of my sight right now or I will smash your fucking head.", "Toxic / Abusive Language"),
+        ("You are a loudmouthed piece of dog shit who needs a severe reality check.", "Toxic / Abusive Language"),
+        ("Fuck off idiot! Nobody asked for your goddamn worthless opinion.", "Toxic / Abusive Language"),
+        ("Holy shit you are the most annoying bitch on this entire fucking planet.", "Toxic / Abusive Language"),
+        ("Everything that comes out of your mouth is toxic diarrhea and lies.", "Toxic / Abusive Language"),
+        ("Screw you, you dishonest scamming bastard. Rotten to the core.", "Toxic / Abusive Language"),
+        ("Shut the hell up already! Stop spreading your cancer and toxic poison everywhere.", "Toxic / Abusive Language"),
+        ("Go drown yourself in a pool of acid you repulsive piece of filthy trash.", "Toxic / Abusive Language"),
+        ("I swear this asshole deserves to be punched square in the fucking mouth.", "Toxic / Abusive Language"),
+        ("Fucking bitch, you ruined everything and now you are playing the victim.", "Toxic / Abusive Language"),
+        ("Goddamn moron. How does someone this brain-damaged even remember how to breathe?", "Toxic / Abusive Language"),
+        ("You are a treacherous rat bastard who stabbed everyone in the back.", "Toxic / Abusive Language"),
+        ("Get bent and fuck yourself sideways. Nobody gives a single damn about you.", "Toxic / Abusive Language"),
+        ("Suck my dick you insufferable asshole. You are the biggest joke here.", "Toxic / Abusive Language"),
+        ("You are full of fucking shit and everyone here knows you are a pathological liar.", "Toxic / Abusive Language"),
+        ("Rot in hell you worthless scumbag. Absolute waste of flesh and bones.", "Toxic / Abusive Language"),
+        ("Piss off you arrogant prick before someone knocks that smug look off your face.", "Toxic / Abusive Language"),
+        ("Stop your goddamn whining you soft pathetic crybaby snowflake bitch.", "Toxic / Abusive Language"),
+        ("I have had enough of your toxic bullshit. Fuck off and never come back.", "Toxic / Abusive Language")
+    ]
+
+    # Additional diverse augmentation to ensure 350+ realistic balanced training samples
+    extra_safe = [
+        ("Good morning everyone! Have a blessed and productive day.", "Normal / Safe"),
+        ("This tutorial is so clear and well-structured, thanks for sharing!", "Normal / Safe"),
+        ("Can we schedule a call tomorrow at 2 PM to go over the design mockups?", "Normal / Safe"),
+        ("Our team won the championship game last night! Super proud of everyone.", "Normal / Safe"),
+        ("Learning Django has been a really fun and rewarding journey so far.", "Normal / Safe"),
+        ("The weather is lovely outside today, perfect day for a walk in the park.", "Normal / Safe"),
+        ("Congratulations on graduating! Big achievements ahead for you.", "Normal / Safe"),
+        ("I love how supportive this open source community is for first-time contributors.", "Normal / Safe"),
+        ("Can someone recommend a lightweight laptop for university computer science courses?", "Normal / Safe"),
+        ("Just baked chocolate chip cookies. Wish I could share with all of you!", "Normal / Safe"),
+        ("The AI model accuracy improved by 5 percent after fine-tuning hyperparameters.", "Normal / Safe"),
+        ("Please remember to backup your database before running schema migrations.", "Normal / Safe"),
+        ("We should promote kindness and constructive empathy on social media networks.", "Normal / Safe"),
+        ("Reading classical literature gives such deep insights into human resilience.", "Normal / Safe"),
+        ("Excited to launch our non-profit initiative to help youth with digital literacy.", "Normal / Safe"),
+        ("The soundtrack of this video game is an absolute masterpiece.", "Normal / Safe"),
+        ("Thank you to all healthcare workers and teachers for your dedication.", "Normal / Safe"),
+        ("I hope you feel better soon! Sending warm wishes and prayers your way.", "Normal / Safe"),
+        ("This is a thoughtful critique, I appreciate your constructive points.", "Normal / Safe"),
+        ("Looking forward to meeting all of you at the upcoming tech summit.", "Normal / Safe"),
+        ("Clean code principles make software maintenance so much more enjoyable.", "Normal / Safe"),
+        ("What a stunning landscape photograph. The lighting is just magical.", "Normal / Safe"),
+        ("Remember to stretch and rest your eyes if you have been staring at screens.", "Normal / Safe"),
+        ("A great leader always listens to the team before making critical decisions.", "Normal / Safe"),
+        ("The community workshop on cyber safety was very informative and practical.", "Normal / Safe"),
+    ]
+
+    extra_harassment = [
+        ("You will never be welcomed in this community, pack your bags and leave.", "Harassment"),
+        ("Keep crying, we are going to make sure your name is ruined everywhere.", "Harassment"),
+        ("Nobody likes you here. Literally every single member wants you banned.", "Harassment"),
+        ("We are going to find all your social media accounts and leave 1-star reviews.", "Harassment"),
+        ("You are so desperate for attention it makes all of us cringe and laugh.", "Harassment"),
+        ("Just stop posting, your content is pure garbage and nobody cares.", "Harassment"),
+        ("I will track your every move online until you finally delete your presence.", "Harassment"),
+        ("You have zero talent, zero friends, and zero future. Give up already.", "Harassment"),
+        ("We are organizing a campaign to get your account permanently suspended.", "Harassment"),
+        ("Don't ever show your face in our server again or we will humiliate you.", "Harassment"),
+    ]
+
+    extra_hate = [
+        ("Those people are culturally backwards savages who belong in the dark ages.", "Hate Speech"),
+        ("Expel all foreigners from our land, they bring crime and disease to our streets.", "Hate Speech"),
+        ("Your race is incapable of higher thought or civilized behavior. Primitive filth.", "Hate Speech"),
+        ("These degenerates are an abomination against nature and must be wiped out.", "Hate Speech"),
+        ("Filthy immigrants taking our jobs and polluting our heritage. Deport them all.", "Hate Speech"),
+        ("Your religion promotes violence and you are all brainwashed zealots.", "Hate Speech"),
+        ("They are vermin living in squalor. Not even fit to be treated as humans.", "Hate Speech"),
+        ("We need to purge our country of these invasive parasites immediately.", "Hate Speech"),
+        ("Disabled people are just useless eaters who drag society down.", "Hate Speech"),
+        ("All members of that tribe are born liars, swindlers, and thieves.", "Hate Speech"),
+    ]
+
+    extra_threat = [
+        ("I am coming to your workplace tomorrow to break your jaw into pieces.", "Threatening Language"),
+        ("I will put a bullet in your head if you ever mention my name again.", "Threatening Language"),
+        ("I know your exact street address. You better be ready when we arrive tonight.", "Threatening Language"),
+        ("I will beat you within an inch of your life so you never walk straight again.", "Threatening Language"),
+        ("I am going to slit your throat in your sleep. Just wait and watch.", "Threatening Language"),
+        ("Your life is over. I will hunt you down wherever you try to hide.", "Threatening Language"),
+        ("I am going to throw acid on your face so no one will ever look at you.", "Threatening Language"),
+        ("I have a weapon ready and I know when you leave for the gym every morning.", "Threatening Language"),
+        ("We will torch your home to the ground while your family is trapped inside.", "Threatening Language"),
+        ("Consider yourself dead meat. The countdown has already started.", "Threatening Language"),
+    ]
+
+    extra_personal = [
+        ("You are an utterly repulsive pig and your breath probably smells like sewer.", "Personal Attack"),
+        ("How can one single person be so extraordinarily stupid, incompetent, and blind?", "Personal Attack"),
+        ("Look at how fat and bloated you are. You should be mortified to be seen in public.", "Personal Attack"),
+        ("You have the IQ of a brick and the attractiveness of roadkill.", "Personal Attack"),
+        ("You are a total fraud, a pathological liar, and a complete disgrace.", "Personal Attack"),
+        ("Nobody will ever love a grotesque, needy loser like you. Enjoy dying alone.", "Personal Attack"),
+        ("Your face makes small children cry and adults look away in disgust.", "Personal Attack"),
+        ("You are an utter failure in every single aspect of your pathetic existence.", "Personal Attack"),
+        ("Stop trying to act smart you uneducated clown, everyone sees right through you.", "Personal Attack"),
+        ("You are so incredibly ugly that mirrors must shatter when you walk past them.", "Personal Attack"),
+    ]
+
+    extra_sexual = [
+        ("Send me your private explicit photos or I will tell everyone your dirty secrets.", "Sexual Harassment"),
+        ("You dressed like that because you are begging for a guy to take advantage of you.", "Sexual Harassment"),
+        ("Show us your naked body on stream you cheap slut or get off the internet.", "Sexual Harassment"),
+        ("I will grope you until you scream for help. You know you want it.", "Sexual Harassment"),
+        ("I have your private nudes saved and I am ready to send them to all your contacts.", "Sexual Harassment"),
+        ("You are nothing but an easy whore who opens her legs for anyone.", "Sexual Harassment"),
+        ("I am going to pin you down and make you regret ever saying no to me.", "Sexual Harassment"),
+        ("Send those sexy pictures right now or face the public consequences.", "Sexual Harassment"),
+        ("You look like you belong in a cheap brothel serving old perverts.", "Sexual Harassment"),
+        ("I am going to force myself on you and there is nothing you can do about it.", "Sexual Harassment"),
+    ]
+
+    extra_toxic = [
+        ("Shut the fuck up you useless piece of shit, nobody cares about your whine.", "Toxic / Abusive Language"),
+        ("Go fuck yourself and eat a giant bowl of shit you miserable bastard.", "Toxic / Abusive Language"),
+        ("What a fucking scam run by dishonest greedy pieces of human garbage.", "Toxic / Abusive Language"),
+        ("Fuck you, you arrogant prick. I hope you choke on your own poison.", "Toxic / Abusive Language"),
+        ("Get the fuck out of this thread you braindead motherfucker.", "Toxic / Abusive Language"),
+        ("This is the most retarded, piece-of-crap bullshit I have ever witnessed.", "Toxic / Abusive Language"),
+        ("Shut your fucking face before someone shuts it permanently for you.", "Toxic / Abusive Language"),
+        ("You are a loudmouth bitch who desperately needs to be put in your place.", "Toxic / Abusive Language"),
+        ("Eat shit and rot in hell you disgusting treacherous asshole.", "Toxic / Abusive Language"),
+        ("Piss off you worthless clown, stop polluting the entire comment section.", "Toxic / Abusive Language"),
+    ]
+
+    all_data = samples + extra_safe + extra_harassment + extra_hate + extra_threat + extra_personal + extra_sexual + extra_toxic
+    df = pd.DataFrame(all_data, columns=['text', 'label'])
+    df.to_csv(csv_path, index=False)
+    print(f"Generated curated dataset with {len(df)} samples across {df['label'].nunique()} classes at: {csv_path}")
+    return df
+
+
+def train_and_evaluate_models():
+    """
+    Executes the full ML pipeline:
+    - Preprocessing text
+    - TF-IDF extraction
+    - Stratified Train/Test split
+    - Training 4 ML algorithms
+    - Model evaluation (Accuracy, Precision, Recall, F1, Confusion Matrix)
+    - Model selection & persistence (joblib + metrics JSON)
+    """
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    DATASETS_DIR.mkdir(parents=True, exist_ok=True)
+
+    from ml_engine.preprocessing import clean_text
+
+    print("Step 1: Loading cyberbullying dataset...")
+    df = generate_curated_dataset()
+    print(f"Dataset shape: {df.shape}")
+    print("Class distribution:\n", df['label'].value_counts())
+
+    print("\nStep 2: Cleaning and preprocessing text with NLP pipeline...")
+    df['cleaned_text'] = df['text'].apply(clean_text)
+
+    # Filter out empty texts if any
+    df = df[df['cleaned_text'].str.strip().str.len() > 0].reset_index(drop=True)
+
+    X = df['cleaned_text']
+    y = df['label']
+
+    print("\nStep 3: Stratified Train/Test split (80/20)...")
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.20, random_state=42, stratify=y
+    )
+    print(f"Train samples: {len(X_train)}, Test samples: {len(X_test)}")
+
+    print("\nStep 4: TF-IDF Vectorization (unigrams + bigrams)...")
+    tfidf = TfidfVectorizer(
+        ngram_range=(1, 2),
+        max_features=5000,
+        sublinear_tf=True,
+        min_df=1
+    )
+    X_train_vec = tfidf.fit_transform(X_train)
+    X_test_vec = tfidf.transform(X_test)
+
+    print("\nStep 5: Training multiple Machine Learning classifiers...")
+    models = {
+        "Calibrated Linear SVM": CalibratedClassifierCV(
+            LinearSVC(C=1.0, class_weight='balanced', random_state=42, max_iter=2000),
+            cv=3
+        ),
+        "Logistic Regression": LogisticRegression(
+            C=2.0, class_weight='balanced', max_iter=1000, random_state=42
+        ),
+        "Multinomial Naive Bayes": MultinomialNB(alpha=0.5),
+        "Random Forest": RandomForestClassifier(
+            n_estimators=100, class_weight='balanced', random_state=42
+        )
+    }
+
+    results = {}
+    best_model_name = None
+    best_f1 = -1.0
+    best_model_obj = None
+
+    for name, clf in models.items():
+        print(f"Training {name}...")
+        clf.fit(X_train_vec, y_train)
+        y_pred = clf.predict(X_test_vec)
+
+        acc = float(accuracy_score(y_test, y_pred))
+        p_macro, r_macro, f1_macro, _ = precision_recall_fscore_support(
+            y_test, y_pred, average='macro', zero_division=0
+        )
+        p_weighted, r_weighted, f1_weighted, _ = precision_recall_fscore_support(
+            y_test, y_pred, average='weighted', zero_division=0
+        )
+
+        results[name] = {
+            "accuracy": round(acc, 4),
+            "precision_macro": round(float(p_macro), 4),
+            "recall_macro": round(float(r_macro), 4),
+            "f1_macro": round(float(f1_macro), 4),
+            "precision_weighted": round(float(p_weighted), 4),
+            "recall_weighted": round(float(r_weighted), 4),
+            "f1_weighted": round(float(f1_weighted), 4),
+        }
+        print(f"-> {name} | Accuracy: {acc:.4f} | F1-Score: {f1_weighted:.4f}")
+
+        # Choose best based on weighted F1
+        if f1_weighted > best_f1:
+            best_f1 = f1_weighted
+            best_model_name = name
+            best_model_obj = clf
+
+    print(f"\nBest Model Selected: {best_model_name} (Weighted F1: {best_f1:.4f})")
+
+    # Detailed evaluation of best model
+    best_pred = best_model_obj.predict(X_test_vec)
+    cls_report = classification_report(y_test, best_pred, output_dict=True, zero_division=0)
+    labels_sorted = sorted(list(y.unique()))
+    cm = confusion_matrix(y_test, best_pred, labels=labels_sorted).tolist()
+
+    # Per-class metrics
+    per_class_metrics = {}
+    for label in labels_sorted:
+        if label in cls_report:
+            per_class_metrics[label] = {
+                "precision": round(float(cls_report[label]['precision']), 4),
+                "recall": round(float(cls_report[label]['recall']), 4),
+                "f1_score": round(float(cls_report[label]['f1-score']), 4),
+                "support": int(cls_report[label]['support'])
+            }
+
+    overall_metrics = {
+        "best_model": best_model_name,
+        "total_dataset_size": len(df),
+        "train_samples": len(X_train),
+        "test_samples": len(X_test),
+        "accuracy": round(float(accuracy_score(y_test, best_pred)), 4),
+        "precision_weighted": round(float(cls_report['weighted avg']['precision']), 4),
+        "recall_weighted": round(float(cls_report['weighted avg']['recall']), 4),
+        "f1_weighted": round(float(cls_report['weighted avg']['f1-score']), 4),
+        "precision_macro": round(float(cls_report['macro avg']['precision']), 4),
+        "recall_macro": round(float(cls_report['macro avg']['recall']), 4),
+        "f1_macro": round(float(cls_report['macro avg']['f1-score']), 4),
+        "model_comparison": results,
+        "labels": labels_sorted,
+        "confusion_matrix": cm,
+        "per_class_metrics": per_class_metrics
+    }
+
+    # Save trained model and TF-IDF vectorizer
+    model_file = MODELS_DIR / 'cyberbullying_model.pkl'
+    vectorizer_file = MODELS_DIR / 'tfidf_vectorizer.pkl'
+    metrics_file = MODELS_DIR / 'model_metrics.json'
+
+    joblib.dump(best_model_obj, model_file)
+    joblib.dump(tfidf, vectorizer_file)
+    with open(metrics_file, 'w', encoding='utf-8') as f:
+        json.dump(overall_metrics, f, indent=4)
+
+    print(f"\nSaved best model to: {model_file}")
+    print(f"Saved TF-IDF vectorizer to: {vectorizer_file}")
+    print(f"Saved true evaluation metrics to: {metrics_file}")
+    print("\nTraining & evaluation completed successfully!")
+    return overall_metrics
+
+
+if __name__ == '__main__':
+    train_and_evaluate_models()

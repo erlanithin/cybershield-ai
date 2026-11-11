@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - CyberShield AI{% endblock %}
+
+{% block content %}
+<div class="py-5" style="background: linear-gradient(135deg, rgba(6, 43, 69, 0.05) 0%, rgba(11, 82, 104, 0.08) 100%); min-height: 80vh; display: flex; align-items: center;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="card card-white shadow-lg p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <div class="brand-icon-wrapper mx-auto mb-3" style="width: 52px; height: 52px;">
+                            <i class="bi bi-person-plus-fill fs-3 text-primary"></i>
+                        </div>
+                        <h3 class="fw-bold text-primary mb-1">Create Account</h3>
+                        <p class="text-muted small">Join CyberShield AI to protect your online presence</p>
+                    </div>
+
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-primary small">Username</label>
+                            {{ form.username }}
+                            {% if form.username.errors %}<div class="text-danger small">{{ form.username.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-primary small">Email Address</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-primary small">Password</label>
+                            {{ form.password }}
+                            {% if form.password.errors %}<div class="text-danger small">{{ form.password.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-primary small">Confirm Password</label>
+                            {{ form.confirm_password }}
+                            {% if form.confirm_password.errors %}<div class="text-danger small">{{ form.confirm_password.errors }}</div>{% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-accent w-100 py-2 fw-bold">
+                            <i class="bi bi-check2-circle me-1"></i> Register Account
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4 pt-3 border-top">
+                        <span class="small text-muted">Already registered? </span>
+                        <a href="{% url 'login' %}" class="small fw-bold text-secondary">Sign In Here</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}Cyberbullying Incident Reports - CyberShield AI{% endblock %}
+
+{% block content %}
+<div class="py-5 bg-light border-bottom">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <span class="section-pill">Public Safety</span>
+                <h1 class="fw-bold text-primary mb-1">Cyberbullying Incident Reports</h1>
+                <p class="text-muted mb-0">Track and monitor reported incidents across social media platforms.</p>
+            </div>
+            <div>
+                <a href="{% url 'report_create' %}" class="btn btn-accent">
+                    <i class="bi bi-shield-plus me-1"></i> File New Incident Report
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    <!-- Filter bar -->
+    <div class="card card-white shadow-sm p-3 mb-4">
+        <form method="GET" action="{% url 'reports' %}" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Investigation Statuses</option>
+                    <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending Review</option>
+                    <option value="Under Review" {% if status_filter == 'Under Review' %}selected{% endif %}>Under Investigation</option>
+                    <option value="Resolved" {% if status_filter == 'Resolved' %}selected{% endif %}>Resolved & Action Taken</option>
+                    <option value="Dismissed" {% if status_filter == 'Dismissed' %}selected{% endif %}>Dismissed</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select name="platform" class="form-select form-select-sm">
+                    <option value="">All Social Media Platforms</option>
+                    <option value="Twitter / X" {% if platform_filter == 'Twitter / X' %}selected{% endif %}>Twitter / X</option>
+                    <option value="Instagram" {% if platform_filter == 'Instagram' %}selected{% endif %}>Instagram</option>
+                    <option value="Facebook" {% if platform_filter == 'Facebook' %}selected{% endif %}>Facebook</option>
+                    <option value="TikTok" {% if platform_filter == 'TikTok' %}selected{% endif %}>TikTok</option>
+                    <option value="Discord" {% if platform_filter == 'Discord' %}selected{% endif %}>Discord</option>
+                    <option value="Reddit" {% if platform_filter == 'Reddit' %}selected{% endif %}>Reddit</option>
+                    <option value="YouTube" {% if platform_filter == 'YouTube' %}selected{% endif %}>YouTube</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary-dark btn-sm w-100">Filter Reports</button>
+            </div>
+            <div class="col-md-2">
+                <a href="{% url 'reports' %}" class="btn btn-outline-secondary btn-sm w-100">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Reports list -->
+    <div class="card card-white shadow-sm overflow-hidden">
+        <div class="table-responsive">
+            <table class="table custom-table mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Incident Title</th>
+                        <th>Platform</th>
+                        <th>Harm Category</th>
+                        <th>Status</th>
+                        <th>Reported Date</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in page_obj %}
+                    <tr>
+                        <td><span class="fw-bold text-muted">#{{ report.id }}</span></td>
+                        <td>
+                            <a href="{% url 'report_detail' report.id %}" class="fw-bold text-primary">
+                                {{ report.title }}
+                            </a>
+                            <div class="small text-muted text-truncate" style="max-width: 320px;">
+                                "{{ report.offensive_message }}"
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">
+                                <i class="bi bi-globe me-1"></i>{{ report.platform }}
+                            </span>
+                        </td>
+                        <td><span class="fw-semibold">{{ report.category }}</span></td>
+                        <td>
+                            <span class="badge {{ report.status_badge_class }}">
+                                {{ report.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="small text-muted">{{ report.created_at|date:"M d, Y" }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'report_detail' report.id %}" class="btn btn-sm btn-outline-custom">
+                                View Case
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-shield-check fs-2 text-success d-block mb-2"></i>
+                            No incident reports found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+            <span class="small text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+                {% endif %}
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

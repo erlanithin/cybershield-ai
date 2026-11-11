@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}My Detection History - CyberShield AI{% endblock %}
+
+{% block content %}
+<div class="py-5 bg-light border-bottom">
+    <div class="container">
+        <span class="section-pill">Personal Archive</span>
+        <h1 class="fw-bold text-primary mb-1">My Detection History</h1>
+        <p class="text-muted mb-0">Review all comments and messages submitted from your account.</p>
+    </div>
+</div>
+
+<div class="container py-5">
+    <!-- User Quick Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="dashboard-stat-card">
+                <div class="dash-icon-box bg-primary text-white">
+                    <i class="bi bi-chat-left-text"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-0">{{ total }}</h3>
+                    <div class="small text-muted">Total Analyzed</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="dashboard-stat-card">
+                <div class="dash-icon-box" style="background: rgba(32, 166, 122, 0.15); color: var(--success);">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-success mb-0">{{ safe }}</h3>
+                    <div class="small text-muted">Safe Content</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="dashboard-stat-card">
+                <div class="dash-icon-box" style="background: rgba(231, 76, 60, 0.15); color: var(--danger);">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-danger mb-0">{{ harmful }}</h3>
+                    <div class="small text-muted">Harmful Signals</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Table -->
+    <div class="card card-white shadow-sm overflow-hidden mb-4">
+        <div class="card-header bg-white py-3">
+            <h6 class="fw-bold text-primary mb-0"><i class="bi bi-clock-history me-2"></i>My Analyzed Items</h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table custom-table mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Message</th>
+                        <th>Category</th>
+                        <th>Risk Level</th>
+                        <th>Confidence</th>
+                        <th>Date & Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in page_obj %}
+                    <tr>
+                        <td><span class="fw-bold text-muted">#{{ item.id }}</span></td>
+                        <td style="max-width: 320px;" class="text-truncate" title="{{ item.original_text }}">{{ item.original_text }}</td>
+                        <td><span class="fw-semibold">{{ item.predicted_category }}</span></td>
+                        <td><span class="badge {{ item.badge_class }}">{{ item.risk_level }}</span></td>
+                        <td><span class="fw-bold">{{ item.confidence_score }}%</span></td>
+                        <td class="small text-muted">{{ item.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            You have not analyzed any messages while logged in yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+            <span class="small text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+                {% endif %}
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,169 @@
+{
+    "best_model": "Logistic Regression",
+    "total_dataset_size": 290,
+    "train_samples": 232,
+    "test_samples": 58,
+    "accuracy": 0.6207,
+    "precision_weighted": 0.6504,
+    "recall_weighted": 0.6207,
+    "f1_weighted": 0.6309,
+    "precision_macro": 0.613,
+    "recall_macro": 0.5964,
+    "f1_macro": 0.6,
+    "model_comparison": {
+        "Calibrated Linear SVM": {
+            "accuracy": 0.569,
+            "precision_macro": 0.5401,
+            "recall_macro": 0.5403,
+            "f1_macro": 0.5337,
+            "precision_weighted": 0.5861,
+            "recall_weighted": 0.569,
+            "f1_weighted": 0.5714
+        },
+        "Logistic Regression": {
+            "accuracy": 0.6207,
+            "precision_macro": 0.613,
+            "recall_macro": 0.5964,
+            "f1_macro": 0.6,
+            "precision_weighted": 0.6504,
+            "recall_weighted": 0.6207,
+            "f1_weighted": 0.6309
+        },
+        "Multinomial Naive Bayes": {
+            "accuracy": 0.5862,
+            "precision_macro": 0.6463,
+            "recall_macro": 0.5313,
+            "f1_macro": 0.5497,
+            "precision_weighted": 0.6318,
+            "recall_weighted": 0.5862,
+            "f1_weighted": 0.57
+        },
+        "Random Forest": {
+            "accuracy": 0.3966,
+            "precision_macro": 0.4761,
+            "recall_macro": 0.3061,
+            "f1_macro": 0.2964,
+            "precision_weighted": 0.4527,
+            "recall_weighted": 0.3966,
+            "f1_weighted": 0.3243
+        }
+    },
+    "labels": [
+        "Harassment",
+        "Hate Speech",
+        "Normal / Safe",
+        "Personal Attack",
+        "Sexual Harassment",
+        "Threatening Language",
+        "Toxic / Abusive Language"
+    ],
+    "confusion_matrix": [
+        [
+            3,
+            0,
+            1,
+            2,
+            1,
+            1,
+            0
+        ],
+        [
+            1,
+            5,
+            0,
+            1,
+            0,
+            0,
+            0
+        ],
+        [
+            2,
+            0,
+            12,
+            0,
+            0,
+            0,
+            1
+        ],
+        [
+            1,
+            1,
+            0,
+            4,
+            0,
+            1,
+            0
+        ],
+        [
+            1,
+            0,
+            0,
+            0,
+            4,
+            1,
+            1
+        ],
+        [
+            2,
+            0,
+            0,
+            1,
+            0,
+            3,
+            1
+        ],
+        [
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            5
+        ]
+    ],
+    "per_class_metrics": {
+        "Harassment": {
+            "precision": 0.3,
+            "recall": 0.375,
+            "f1_score": 0.3333,
+            "support": 8
+        },
+        "Hate Speech": {
+            "precision": 0.7143,
+            "recall": 0.7143,
+            "f1_score": 0.7143,
+            "support": 7
+        },
+        "Normal / Safe": {
+            "precision": 0.9231,
+            "recall": 0.8,
+            "f1_score": 0.8571,
+            "support": 15
+        },
+        "Personal Attack": {
+            "precision": 0.5,
+            "recall": 0.5714,
+            "f1_score": 0.5333,
+            "support": 7
+        },
+        "Sexual Harassment": {
+            "precision": 0.8,
+            "recall": 0.5714,
+            "f1_score": 0.6667,
+            "support": 7
+        },
+        "Threatening Language": {
+            "precision": 0.4286,
+            "recall": 0.4286,
+            "f1_score": 0.4286,
+            "support": 7
+        },
+        "Toxic / Abusive Language": {
+            "precision": 0.625,
+            "recall": 0.7143,
+            "f1_score": 0.6667,
+            "support": 7
+        }
+    }
+}

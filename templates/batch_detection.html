@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}Batch Cyberbullying Analysis - CyberShield AI{% endblock %}
+
+{% block content %}
+<div class="py-5 bg-light border-bottom">
+    <div class="container">
+        <span class="section-pill">Bulk Processing</span>
+        <h1 class="fw-bold text-primary mb-2">Batch Message & CSV Dataset Analysis</h1>
+        <p class="text-muted mb-0">
+            Process multiple comments simultaneously or upload an entire CSV dataset of social media posts for automated moderation.
+        </p>
+    </div>
+</div>
+
+<div class="container py-5">
+    <!-- Input Tabs Card -->
+    <div class="card card-white shadow-sm p-4 mb-5">
+        <ul class="nav nav-tabs nav-fill mb-4" id="batchTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold active text-primary" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-pane" type="button" role="tab">
+                    <i class="bi bi-card-text me-2"></i>Multi-Line Text Input
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold text-primary" id="csv-tab" data-bs-toggle="tab" data-bs-target="#csv-pane" type="button" role="tab">
+                    <i class="bi bi-file-earmark-spreadsheet me-2"></i>Upload CSV or TXT File
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="batchTabContent">
+            <!-- Text block tab -->
+            <div class="tab-pane fade show active" id="text-pane" role="tabpanel">
+                <form method="POST" action="{% url 'batch_detection' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="text_batch">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-primary">Enter or Paste Messages (One Per Line):</label>
+                        {{ text_form.messages_text }}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="small text-muted">Supports up to 500 lines per run.</span>
+                        <button type="submit" class="btn btn-accent px-4">
+                            <i class="bi bi-play-fill me-1"></i> Run Batch Analysis
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- CSV file upload tab -->
+            <div class="tab-pane fade" id="csv-pane" role="tabpanel">
+                <form method="POST" action="{% url 'batch_detection' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="csv_batch">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-primary">Select CSV or TXT File:</label>
+                        {{ csv_form.csv_file }}
+                        <div class="form-text">
+                            File should contain a column titled <code>text</code>, <code>message</code>, or <code>comment</code>. Maximum size 5MB.
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="small text-muted">Automatically strips quotes, commas, and handles utf-8 encoding.</span>
+                        <button type="submit" class="btn btn-primary-dark px-4">
+                            <i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload & Classify Dataset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Results Display (If results exist) -->
+    {% if batch_results %}
+    <div class="mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+            <div>
+                <h4 class="fw-bold text-primary mb-0">
+                    <i class="bi bi-check2-circle text-success me-2"></i>Batch Classification Results
+                </h4>
+                <div class="text-muted small">Processed {{ batch_results.stats.total }} items</div>
+            </div>
+            <a href="{% url 'export_csv' %}" class="btn btn-accent btn-sm">
+                <i class="bi bi-download me-1"></i> Download Clean CSV Report
+            </a>
+        </div>
+
+        <!-- Summary Metric Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3 col-6">
+                <div class="dashboard-stat-card">
+                    <div class="dash-icon-box bg-primary text-white">
+                        <i class="bi bi-stack"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0">{{ batch_results.stats.total }}</h4>
+                        <div class="small text-muted">Total Processed</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-6">
+                <div class="dashboard-stat-card">
+                    <div class="dash-icon-box" style="background: rgba(32, 166, 122, 0.15); color: var(--success);">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold text-success mb-0">{{ batch_results.stats.safe }}</h4>
+                        <div class="small text-muted">Safe Messages</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-6">
+                <div class="dashboard-stat-card">
+                    <div class="dash-icon-box" style="background: rgba(243, 156, 18, 0.15); color: var(--warning);">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold text-warning mb-0">{{ batch_results.stats.warning }}</h4>
+                        <div class="small text-muted">Potentially Harmful</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-6">
+                <div class="dashboard-stat-card">
+                    <div class="dash-icon-box" style="background: rgba(231, 76, 60, 0.15); color: var(--danger);">
+                        <i class="bi bi-shield-slash"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold text-danger mb-0">{{ batch_results.stats.high_risk }}</h4>
+                        <div class="small text-muted">High-Risk Alerts</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Results Table -->
+        <div class="card card-white shadow-sm overflow-hidden">
+            <div class="table-responsive">
+                <table class="table custom-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Original Message</th>
+                            <th>Predicted Category</th>
+                            <th>Risk Level</th>
+                            <th>Confidence</th>
+                            <th>Trigger Signals</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in batch_results.items %}
+                        <tr>
+                            <td class="fw-bold text-muted">{{ forloop.counter }}</td>
+                            <td style="max-width: 320px;" class="text-truncate" title="{{ item.original_text }}">
+                                {{ item.original_text }}
+                            </td>
+                            <td><span class="fw-semibold">{{ item.predicted_category }}</span></td>
+                            <td>
+                                <span class="badge {{ item.badge_class }}">{{ item.risk_level }}</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold">{{ item.confidence_score }}%</span>
+                            </td>
+                            <td>
+                                {% if item.trigger_words %}
+                                    {% for tw in item.trigger_words %}
+                                        <span class="trigger-word-pill">{{ tw }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,464 @@
+{% extends 'base.html' %}
+
+{% block title %}CyberShield AI - Creating a Safer Digital World with AI{% endblock %}
+
+{% block content %}
+<!-- SECTION 2 – HERO SECTION -->
+<section class="hero-section">
+    <div class="container position-relative" style="z-index: 2;">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-7">
+                <div class="hero-badge">
+                    <i class="bi bi-shield-fill-check"></i>
+                    <span>Next-Gen Machine Learning Defense System</span>
+                </div>
+                <h1 class="hero-title">
+                    Creating a <span class="highlight-accent">Safer Digital World</span> with AI
+                </h1>
+                <p class="hero-subtitle">
+                    Advanced AI-powered cyberbullying detection to identify harmful online behavior, protect users, and promote safer social media communities.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{% url 'detection' %}" class="btn btn-accent btn-lg">
+                        <i class="bi bi-cpu fs-5"></i> Start Detection
+                    </a>
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-light-glow btn-lg">
+                        <i class="bi bi-speedometer2 fs-5"></i> Explore Dashboard
+                    </a>
+                    <a href="#how-it-works" class="btn btn-outline-light-glow btn-lg">
+                        <i class="bi bi-play-circle fs-5"></i> How It Works
+                    </a>
+                </div>
+
+                <!-- Live status banner -->
+                <div class="d-flex align-items-center gap-4 mt-4 pt-3 text-white-50 border-top border-secondary">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
+                        <span class="small text-white">Active Engine: <strong>{{ global_best_model }}</strong></span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-lock-fill text-info"></i>
+                        <span class="small text-white">Privacy-First Data Architecture</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Glassmorphism Statistics Card -->
+            <div class="col-lg-5">
+                <div class="hero-glass-stat-card">
+                    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-light">
+                        <div class="fw-bold fs-5 text-white">Live Platform Health</div>
+                        <span class="badge bg-success bg-opacity-75 text-white px-2 py-1 small">
+                            <i class="bi bi-broadcast me-1"></i> Real-Time
+                        </span>
+                    </div>
+
+                    <div class="stat-item">
+                        <div class="stat-icon-box stat-icon-blue">
+                            <i class="bi bi-chat-left-text-fill"></i>
+                        </div>
+                        <div>
+                            <div class="stat-number">{{ global_total_analyzed }}</div>
+                            <div class="stat-label">Total Messages Analyzed</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-item">
+                        <div class="stat-icon-box stat-icon-danger">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        </div>
+                        <div>
+                            <div class="stat-number">{{ global_harmful_count }}</div>
+                            <div class="stat-label">Cyberbullying Detected</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-item">
+                        <div class="stat-icon-box stat-icon-success">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <div>
+                            <div class="stat-number">{{ global_safe_count }}</div>
+                            <div class="stat-label">Safe Messages Verified</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-item">
+                        <div class="stat-icon-box stat-icon-purple">
+                            <i class="bi bi-bullseye"></i>
+                        </div>
+                        <div>
+                            <div class="stat-number">{{ global_detection_accuracy }}%</div>
+                            <div class="stat-label">Model Evaluation Accuracy</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 3 – OUR FEATURES -->
+<section class="section-py" id="features">
+    <div class="container">
+        <div class="section-title-wrap">
+            <span class="section-pill">Core Capabilities</span>
+            <h2 class="section-heading">Multi-Class AI Detection Suite</h2>
+            <p class="section-subtext">
+                CyberShield AI deploys sophisticated NLP pipelines and supervised machine learning algorithms to isolate and classify nuanced online hostility.
+            </p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Feature 1 -->
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <i class="bi bi-lightning-charge-fill"></i>
+                    </div>
+                    <h3 class="feature-card-title">1. Real-Time Text Detection</h3>
+                    <p class="feature-card-desc">
+                        Instant analysis of single posts, direct messages, and comments with sub-second latency, providing confidence scores and granular risk ratings.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <i class="bi bi-megaphone-fill"></i>
+                    </div>
+                    <h3 class="feature-card-title">2. Hate Speech Identification</h3>
+                    <p class="feature-card-desc">
+                        Identifies dehumanizing slurs, religious hatred, racism, xenophobia, and discriminatory hostility targeting protected identity attributes.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <i class="bi bi-virus2"></i>
+                    </div>
+                    <h3 class="feature-card-title">3. Toxic Comment Analysis</h3>
+                    <p class="feature-card-desc">
+                        Pinpoints aggressive profanity, persistent insults, trolling, vulgar hostility, and attempts to suppress constructive civil discourse.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Feature 4 -->
+            <div class="col-lg-6 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper" style="background: rgba(231, 76, 60, 0.12); color: var(--danger);">
+                        <i class="bi bi-shield-slash-fill"></i>
+                    </div>
+                    <h3 class="feature-card-title">4. Threat Detection & Grievous Harm</h3>
+                    <p class="feature-card-desc">
+                        Isolates direct and indirect threats of bodily violence, stalking, weapons, and self-harm incitement. Automatically triggers urgent safety guidance and escalation protocols.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Feature 5 -->
+            <div class="col-lg-6 col-md-12">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper" style="background: rgba(32, 166, 122, 0.12); color: var(--success);">
+                        <i class="bi bi-file-earmark-bar-graph-fill"></i>
+                    </div>
+                    <h3 class="feature-card-title">5. AI-Powered Reporting & Evidence Archival</h3>
+                    <p class="feature-card-desc">
+                        Enables victims and moderators to file structured incident reports with platform tags, evidence uploads, moderation tracking, and downloadable audit logs.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 4 – HOW IT WORKS -->
+<section class="section-py bg-white" id="how-it-works">
+    <div class="container">
+        <div class="section-title-wrap">
+            <span class="section-pill">System Architecture</span>
+            <h2 class="section-heading">How CyberShield AI Operates</h2>
+            <p class="section-subtext">
+                An end-to-end transparent natural language processing pipeline translating raw user input into actionable safety intelligence.
+            </p>
+        </div>
+
+        <div class="row g-4 justify-content-center">
+            <!-- Step 1 -->
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="workflow-step-card">
+                    <div class="step-number-badge">1</div>
+                    <i class="bi bi-keyboard fs-2 text-primary mb-3 d-block"></i>
+                    <h6 class="fw-bold mb-1">User Input</h6>
+                    <p class="small text-muted mb-0">Raw text, comments, or bulk CSV upload</p>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="workflow-step-card">
+                    <div class="step-number-badge">2</div>
+                    <i class="bi bi-funnel-fill fs-2 text-primary mb-3 d-block"></i>
+                    <h6 class="fw-bold mb-1">Preprocessing</h6>
+                    <p class="small text-muted mb-0">Emojis, slang, URLs, punctuation & lemmatization</p>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="workflow-step-card">
+                    <div class="step-number-badge">3</div>
+                    <i class="bi bi-diagram-3-fill fs-2 text-primary mb-3 d-block"></i>
+                    <h6 class="fw-bold mb-1">NLP Vectorizer</h6>
+                    <p class="small text-muted mb-0">TF-IDF n-gram feature extraction</p>
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="workflow-step-card">
+                    <div class="step-number-badge">4</div>
+                    <i class="bi bi-cpu-fill fs-2 text-primary mb-3 d-block"></i>
+                    <h6 class="fw-bold mb-1">ML Inference</h6>
+                    <p class="small text-muted mb-0">Supervised 7-class probability scoring</p>
+                </div>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="workflow-step-card">
+                    <div class="step-number-badge">5</div>
+                    <i class="bi bi-patch-check-fill fs-2 text-primary mb-3 d-block"></i>
+                    <h6 class="fw-bold mb-1">Detection Result</h6>
+                    <p class="small text-muted mb-0">Confidence, risk profile & keyword triggers</p>
+                </div>
+            </div>
+
+            <!-- Step 6 -->
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="workflow-step-card">
+                    <div class="step-number-badge">6</div>
+                    <i class="bi bi-shield-lock-fill fs-2 text-primary mb-3 d-block"></i>
+                    <h6 class="fw-bold mb-1">Report & Audit</h6>
+                    <p class="small text-muted mb-0">Moderation escalation & CSV audit export</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 5 – DASHBOARD PREVIEW -->
+<section class="section-py" id="preview">
+    <div class="container">
+        <div class="section-title-wrap">
+            <span class="section-pill">Interactive Intelligence</span>
+            <h2 class="section-heading">Live Dashboard Preview</h2>
+            <p class="section-subtext">
+                Real-time metrics, risk distribution breakdown, and recent detection event streams.
+            </p>
+        </div>
+
+        <!-- Metric summary strip -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3 col-6">
+                <div class="dashboard-stat-card">
+                    <div class="dash-icon-box" style="background: rgba(6, 43, 69, 0.1); color: var(--primary);">
+                        <i class="bi bi-chat-dots-fill"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">{{ global_total_analyzed }}</h3>
+                        <div class="small text-muted">Total Analyzed</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-6">
+                <div class="dashboard-stat-card">
+                    <div class="dash-icon-box" style="background: rgba(231, 76, 60, 0.12); color: var(--danger);">
+                        <i class="bi bi-shield-x"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0 text-danger">{{ global_harmful_count }}</h3>
+                        <div class="small text-muted">Harmful Messages</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-6">
+                <div class="dashboard-stat-card">
+                    <div class="dash-icon-box" style="background: rgba(32, 166, 122, 0.12); color: var(--success);">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0 text-success">{{ global_safe_count }}</h3>
+                        <div class="small text-muted">Non-Bullying Messages</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-6">
+                <div class="dashboard-stat-card">
+                    <div class="dash-icon-box" style="background: rgba(115, 227, 232, 0.2); color: var(--secondary);">
+                        <i class="bi bi-pie-chart-fill"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">{{ global_detection_accuracy }}%</h3>
+                        <div class="small text-muted">Model Accuracy</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Detection Table Preview -->
+        <div class="card card-white shadow-sm overflow-hidden mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <div class="fw-bold text-primary">
+                    <i class="bi bi-activity me-2"></i>Recent Detection Stream
+                </div>
+                <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-custom">View Full Dashboard</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table custom-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Analyzed Message</th>
+                            <th>Predicted Category</th>
+                            <th>Risk Level</th>
+                            <th>Confidence</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in recent_detections %}
+                        <tr>
+                            <td><span class="fw-bold text-muted">#{{ item.id }}</span></td>
+                            <td class="text-truncate" style="max-width: 320px;" title="{{ item.original_text }}">
+                                {{ item.original_text }}
+                            </td>
+                            <td><span class="fw-semibold">{{ item.predicted_category }}</span></td>
+                            <td>
+                                <span class="badge {{ item.badge_class }}">{{ item.risk_level }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="small fw-bold">{{ item.confidence_score }}%</span>
+                                    <div class="progress flex-grow-1" style="height: 5px; width: 60px;">
+                                        <div class="progress-bar bg-primary" style="width: {{ item.confidence_score }}%;"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="small text-muted">{{ item.created_at|date:"M d, H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                No detection logs recorded yet. Try running an analysis!
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 6 – WHY CYBERSHIELD AI? -->
+<section class="section-py bg-white">
+    <div class="container">
+        <div class="section-title-wrap">
+            <span class="section-pill">Why Choose Us</span>
+            <h2 class="section-heading">Why CyberShield AI?</h2>
+            <p class="section-subtext">
+                Designed to bridge advanced academic machine learning research with mission-critical online safety operations.
+            </p>
+        </div>
+
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-6">
+                <div class="d-flex align-items-start gap-3 mb-4">
+                    <div class="dash-icon-box bg-primary text-white flex-shrink-0" style="width: 46px; height: 46px;">
+                        <i class="bi bi-shield-check fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1">AI-Powered Protection</h5>
+                        <p class="text-muted small mb-0">Multi-algorithm models evaluated against real abusive patterns, including sarcasm, slang, and repeated characters.</p>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-start gap-3 mb-4">
+                    <div class="dash-icon-box bg-secondary text-white flex-shrink-0" style="width: 46px; height: 46px;">
+                        <i class="bi bi-speedometer fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1">Fast Message Analysis</h5>
+                        <p class="text-muted small mb-0">High-throughput classification pipeline capable of single-millisecond response times for real-time chat moderation.</p>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-start gap-3 mb-4">
+                    <div class="dash-icon-box bg-info text-white flex-shrink-0" style="width: 46px; height: 46px;">
+                        <i class="bi bi-layers-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1">Intelligent 7-Class Classification</h5>
+                        <p class="text-muted small mb-0">Differentiates between harmless disagreements, toxic frustration, personal attacks, and grave criminal threats.</p>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-start gap-3 mb-4">
+                    <div class="dash-icon-box bg-success text-white flex-shrink-0" style="width: 46px; height: 46px;">
+                        <i class="bi bi-eye-slash-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1">User Privacy by Design</h5>
+                        <p class="text-muted small mb-0">Zero private backdoor snooping. Analysis only occurs on content submitted with explicit user consent or platform API tokens.</p>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-start gap-3">
+                    <div class="dash-icon-box bg-dark text-white flex-shrink-0" style="width: 46px; height: 46px;">
+                        <i class="bi bi-people-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1">Safer Digital Communities</h5>
+                        <p class="text-muted small mb-0">Empowers educational institutions, gaming servers, and social media platforms to foster healthy, inclusive digital culture.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card card-glass p-4 p-lg-5">
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <div class="brand-icon-wrapper" style="width: 48px; height: 48px;">
+                            <i class="bi bi-cpu-fill fs-4"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold text-primary mb-0">Ready to Test Your Content?</h4>
+                            <div class="small text-muted">Try our interactive NLP text analysis engine right now</div>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-4">
+                        Paste any social media comment, direct message, or forum post to test our AI detection models and observe real-time classification, trigger word extraction, and risk indicators.
+                    </p>
+                    <div class="d-flex flex-column gap-3">
+                        <a href="{% url 'detection' %}" class="btn btn-accent btn-lg w-100 justify-content-center">
+                            <i class="bi bi-play-circle-fill"></i> Launch Detection Engine
+                        </a>
+                        <a href="{% url 'batch_detection' %}" class="btn btn-outline-custom w-100 justify-content-center">
+                            <i class="bi bi-file-earmark-spreadsheet-fill"></i> Upload Batch Dataset (.csv)
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

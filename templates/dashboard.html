@@ -1,0 +1,416 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin & Moderator Analytics Dashboard - CyberShield AI{% endblock %}
+
+{% block content %}
+<div class="py-4 bg-light border-bottom">
+    <div class="container-fluid px-lg-5">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <span class="section-pill">Command Center</span>
+                <h2 class="fw-bold text-primary mb-1">Moderator & Admin Analytics Dashboard</h2>
+                <div class="text-muted small">Live surveillance metrics, risk category distribution, and audited moderation logs</div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'model_analytics' %}" class="btn btn-outline-custom">
+                    <i class="bi bi-cpu me-1"></i> Model Metrics
+                </a>
+                <a href="{% url 'export_csv' %}?q={{ filter_q }}&risk={{ filter_risk }}&category={{ filter_category }}" class="btn btn-accent">
+                    <i class="bi bi-download me-1"></i> Export Filtered CSV
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid px-lg-5 py-4">
+    <!-- Statistics Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Stat 1 -->
+        <div class="col-xl col-md-4 col-sm-6">
+            <div class="dashboard-stat-card">
+                <div class="dash-icon-box bg-primary text-white">
+                    <i class="bi bi-chat-square-dots-fill"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-0">{{ analytics.total_analyses }}</h3>
+                    <div class="small text-muted">Total Analyzed</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stat 2 -->
+        <div class="col-xl col-md-4 col-sm-6">
+            <div class="dashboard-stat-card">
+                <div class="dash-icon-box" style="background: rgba(243, 156, 18, 0.15); color: var(--warning);">
+                    <i class="bi bi-exclamation-octagon-fill"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-warning mb-0">{{ analytics.harmful_total }}</h3>
+                    <div class="small text-muted">Potential Bullying</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stat 3 -->
+        <div class="col-xl col-md-4 col-sm-6">
+            <div class="dashboard-stat-card">
+                <div class="dash-icon-box" style="background: rgba(32, 166, 122, 0.15); color: var(--success);">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-success mb-0">{{ analytics.safe_analyses }}</h3>
+                    <div class="small text-muted">Safe Messages</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stat 4 -->
+        <div class="col-xl col-md-6 col-sm-6">
+            <div class="dashboard-stat-card">
+                <div class="dash-icon-box" style="background: rgba(231, 76, 60, 0.15); color: var(--danger);">
+                    <i class="bi bi-shield-slash-fill"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-danger mb-0">{{ analytics.high_risk_analyses }}</h3>
+                    <div class="small text-muted">High-Risk Alerts</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stat 5 -->
+        <div class="col-xl col-md-6 col-sm-12">
+            <div class="dashboard-stat-card">
+                <div class="dash-icon-box" style="background: rgba(11, 82, 104, 0.15); color: var(--secondary);">
+                    <i class="bi bi-flag-fill"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-primary mb-0">{{ total_reports }}</h3>
+                    <div class="small text-muted">Incident Reports ({{ pending_reports }} Pending)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Daily Detection Activity Chart -->
+        <div class="col-lg-7">
+            <div class="card card-white shadow-sm p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-primary mb-0">
+                        <i class="bi bi-graph-up me-2"></i>Daily Detection Activity (Past 7 Days)
+                    </h6>
+                    <span class="badge bg-light text-muted border">Live Activity</span>
+                </div>
+                <div style="height: 280px;">
+                    <canvas id="dailyActivityChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Safe vs Harmful & Category Distribution Charts -->
+        <div class="col-lg-5">
+            <div class="card card-white shadow-sm p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-primary mb-0">
+                        <i class="bi bi-pie-chart me-2"></i>Safe vs Harmful Ratio
+                    </h6>
+                    <span class="small fw-semibold text-muted">{{ analytics.harmful_pct }}% Harmful</span>
+                </div>
+                <div style="height: 280px; position: relative;">
+                    <canvas id="safeHarmfulChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Distribution Horizontal Bar -->
+        <div class="col-12">
+            <div class="card card-white shadow-sm p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-primary mb-0">
+                        <i class="bi bi-bar-chart-steps me-2"></i>Bullying Category Distribution
+                    </h6>
+                    <span class="small text-muted">Multi-Class NLP Breakdown</span>
+                </div>
+                <div style="height: 240px;">
+                    <canvas id="categoryDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detection History Table Card -->
+    <div class="card card-white shadow-sm overflow-hidden mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="fw-bold text-primary">
+                    <i class="bi bi-list-check me-2"></i>Detection History & Moderation Logs
+                    <span class="badge bg-light text-dark border ms-2">{{ total_count }} Records</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search & Filter Controls -->
+        <div class="p-3 bg-light border-bottom">
+            <form method="GET" action="{% url 'dashboard' %}" class="row g-2 align-items-center">
+                <div class="col-md-4">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control" placeholder="Search message text..." value="{{ filter_q }}">
+                    </div>
+                </div>
+
+                <div class="col-md-2 col-6">
+                    <select name="risk" class="form-select form-select-sm">
+                        <option value="">All Risk Levels</option>
+                        <option value="Safe" {% if filter_risk == 'Safe' %}selected{% endif %}>Safe</option>
+                        <option value="Potentially Harmful" {% if filter_risk == 'Potentially Harmful' %}selected{% endif %}>Potentially Harmful</option>
+                        <option value="High-Risk Content" {% if filter_risk == 'High-Risk Content' %}selected{% endif %}>High-Risk Content</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3 col-6">
+                    <select name="category" class="form-select form-select-sm">
+                        <option value="">All Categories</option>
+                        {% for cat in categories_list %}
+                            <option value="{{ cat }}" {% if filter_category == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-6">
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All Statuses</option>
+                        <option value="unreviewed" {% if filter_status == 'unreviewed' %}selected{% endif %}>Unreviewed</option>
+                        <option value="flagged" {% if filter_status == 'flagged' %}selected{% endif %}>Flagged</option>
+                        <option value="verified" {% if filter_status == 'verified' %}selected{% endif %}>Verified</option>
+                        <option value="dismissed" {% if filter_status == 'dismissed' %}selected{% endif %}>Dismissed</option>
+                    </select>
+                </div>
+
+                <div class="col-md-1 col-6 d-flex gap-1">
+                    <button type="submit" class="btn btn-primary-dark btn-sm w-100">Filter</button>
+                    {% if filter_q or filter_risk or filter_category or filter_status %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters"><i class="bi bi-x"></i></a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- History Table -->
+        <div class="table-responsive">
+            <table class="table custom-table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 70px;">ID</th>
+                        <th>Analyzed Message</th>
+                        <th>Predicted Category</th>
+                        <th>Risk Level</th>
+                        <th>Confidence</th>
+                        <th>Date & Time</th>
+                        <th>Review Status</th>
+                        <th class="text-end">Moderation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in page_obj %}
+                    <tr>
+                        <td><span class="fw-bold text-muted">#{{ item.id }}</span></td>
+                        <td style="max-width: 320px;" class="text-truncate" title="{{ item.original_text }}">
+                            {{ item.original_text }}
+                        </td>
+                        <td><span class="fw-semibold">{{ item.predicted_category }}</span></td>
+                        <td>
+                            <span class="badge {{ item.badge_class }}">{{ item.risk_level }}</span>
+                        </td>
+                        <td>
+                            <span class="fw-bold">{{ item.confidence_score }}%</span>
+                        </td>
+                        <td class="small text-muted">{{ item.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            <span class="badge bg-light text-dark border">
+                                {{ item.get_review_status_display }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <form method="POST" action="{% url 'update_review_status' item.id %}" class="d-inline-flex gap-1">
+                                {% csrf_token %}
+                                <select name="review_status" class="form-select form-select-sm" onchange="this.form.submit()" style="width: 120px;">
+                                    <option value="unreviewed" {% if item.review_status == 'unreviewed' %}selected{% endif %}>Unreviewed</option>
+                                    <option value="flagged" {% if item.review_status == 'flagged' %}selected{% endif %}>Flag</option>
+                                    <option value="verified" {% if item.review_status == 'verified' %}selected{% endif %}>Verify</option>
+                                    <option value="dismissed" {% if item.review_status == 'dismissed' %}selected{% endif %}>Dismiss</option>
+                                </select>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-search fs-3 d-block mb-2"></i>
+                            No detection logs found matching the filter criteria.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+            <div class="small text-muted">
+                Showing page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </div>
+            <nav aria-label="Detection pagination">
+                <ul class="pagination pagination-sm mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ filter_q }}&risk={{ filter_risk }}&category={{ filter_category }}&status={{ filter_status }}">Previous</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}&q={{ filter_q }}&risk={{ filter_risk }}&category={{ filter_category }}&status={{ filter_status }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ filter_q }}&risk={{ filter_risk }}&category={{ filter_category }}&status={{ filter_status }}">Next</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Daily Activity Chart
+    const dailyCtx = document.getElementById('dailyActivityChart');
+    if (dailyCtx) {
+        new Chart(dailyCtx, {
+            type: 'line',
+            data: {
+                labels: {{ analytics.daily_labels|safe }},
+                datasets: [
+                    {
+                        label: 'Total Analyzed',
+                        data: {{ analytics.daily_total|safe }},
+                        borderColor: '#062B45',
+                        backgroundColor: 'rgba(6, 43, 69, 0.08)',
+                        tension: 0.35,
+                        fill: true
+                    },
+                    {
+                        label: 'Harmful / Bullying',
+                        data: {{ analytics.daily_harmful|safe }},
+                        borderColor: '#E74C3C',
+                        backgroundColor: 'rgba(231, 76, 60, 0.12)',
+                        tension: 0.35,
+                        fill: true
+                    },
+                    {
+                        label: 'Safe Messages',
+                        data: {{ analytics.daily_safe|safe }},
+                        borderColor: '#20A67A',
+                        backgroundColor: 'rgba(32, 166, 122, 0.1)',
+                        tension: 0.35,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+
+    // 2. Safe vs Harmful Ratio Chart
+    const safeHarmfulCtx = document.getElementById('safeHarmfulChart');
+    if (safeHarmfulCtx) {
+        new Chart(safeHarmfulCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Safe Messages', 'Potentially Harmful', 'High-Risk Content'],
+                datasets: [{
+                    data: [
+                        {{ analytics.safe_analyses }},
+                        {{ analytics.warning_analyses }},
+                        {{ analytics.high_risk_analyses }}
+                    ],
+                    backgroundColor: ['#20A67A', '#F39C12', '#E74C3C'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                cutout: '70%'
+            }
+        });
+    }
+
+    // 3. Category Distribution Bar Chart
+    const categoryCtx = document.getElementById('categoryDistributionChart');
+    if (categoryCtx) {
+        new Chart(categoryCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ analytics.categories_labels|safe }},
+                datasets: [{
+                    label: 'Detections Count',
+                    data: {{ analytics.categories_data|safe }},
+                    backgroundColor: [
+                        '#20A67A',
+                        '#F39C12',
+                        '#E74C3C',
+                        '#d63031',
+                        '#e17055',
+                        '#6c5ce7',
+                        '#0984e3'
+                    ],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
