@@ -150,7 +150,7 @@ def dashboard_view(request):
     # Filters
     q = request.GET.get('q', '').strip()
     if q:
-        queryset = queryset.filter(original_text__icontains(q))
+        queryset = queryset.filter(original_text__icontains=q)
 
     risk = request.GET.get('risk', '').strip()
     if risk:
@@ -237,7 +237,7 @@ def export_csv_view(request):
 
     q = request.GET.get('q', '').strip()
     if q:
-        queryset = queryset.filter(original_text__icontains(q))
+        queryset = queryset.filter(original_text__icontains=q)
 
     risk = request.GET.get('risk', '').strip()
     if risk:
